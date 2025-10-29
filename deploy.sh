@@ -10,11 +10,12 @@ PM2_PROCESS_NAME="figurio-backend"
 
 # --- USAGE ---
 usage() {
-    echo "Usage: $0 [-d | -s | -k | -u]"
+    echo "Usage: $0 [-d | -s | -k | -r | --change-database-structure]"
     echo "  -d    Deploy (git pull + restart backend)"
     echo "  -s    Start backend (PM2)"
     echo "  -k    Stop backend (PM2)"
-    echo "  -u    Update database structure"
+    echo "  -r    Restart backend (PM2)"
+    echo "  --change-database-structure    Update database structure"
     exit 1
 }
 
@@ -22,14 +23,16 @@ if [ $# -eq 0 ]; then
     usage
 fi
 
+ACTION=$1
+
 # --- SCRIPT ---
 ssh $SERVER_USER@$SERVER_HOST << EOF
     cd $PROJECT_DIR || exit
-    case "$1" in
+    case "$ACTION" in
         -d)
             echo "Deploying latest version..."
             git pull
-            pm2 restart $PM2_PROCESS_NAME
+            pm2 restart $PM2_PROCESS_NAME --update-env
             echo "Deployment done."
             ;;
         -s)
@@ -42,7 +45,12 @@ ssh $SERVER_USER@$SERVER_HOST << EOF
             pm2 stop $PM2_PROCESS_NAME
             echo "Backend stopped."
             ;;
-        -u)
+        -r)
+            echo "Restarting backend..."
+            pm2 restart $PM2_PROCESS_NAME --update-env
+            echo "Backend restarted."
+            ;;
+        --change-database-structure)
             echo "Updating database structure..."
             node initDb.js
             echo "Database update done."
