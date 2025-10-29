@@ -10,10 +10,11 @@ PM2_PROCESS_NAME="figurio-backend"
 
 # --- USAGE ---
 usage() {
-    echo "Usage: $0 [-d | -s | -k]"
+    echo "Usage: $0 [-d | -s | -k | -u]"
     echo "  -d    Deploy (git pull + restart backend)"
     echo "  -s    Start backend (PM2)"
     echo "  -k    Stop backend (PM2)"
+    echo "  -u    Update database structure"
     exit 1
 }
 
@@ -40,6 +41,11 @@ ssh $SERVER_USER@$SERVER_HOST << EOF
             echo "Stopping backend..."
             pm2 stop $PM2_PROCESS_NAME
             echo "Backend stopped."
+            ;;
+        -u)
+            echo "Updating database structure..."
+            node initDb.js
+            echo "Database update done."
             ;;
         *)
             echo "Invalid option."

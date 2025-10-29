@@ -1,4 +1,4 @@
-const db = require('./services/db');
+const db = require("./services/db");
 
 async function init() {
   try {
@@ -16,6 +16,10 @@ async function init() {
         visitId INT AUTO_INCREMENT PRIMARY KEY,
         userId VARCHAR(255) NOT NULL,
         timestamp DATETIME DEFAULT CURRENT_TIMESTAMP,
+        ip VARCHAR(45),
+        userAgent VARCHAR(255),
+        country VARCHAR(50),
+        city VARCHAR(50),
         FOREIGN KEY (userId) REFERENCES users(userId) ON DELETE CASCADE
       )
     `);
@@ -32,10 +36,10 @@ async function init() {
       )
     `);
 
-    console.log('Tables created successfully');
+    console.log("Tables created successfully");
     process.exit(0);
   } catch (err) {
-    console.error('Error creating tables:', err);
+    console.error("Error creating tables:", err);
     process.exit(1);
   }
 }
