@@ -1,23 +1,49 @@
 #!/bin/bash
-# update-figurio.sh
-# Script to SSH into server, update Figurio backend via git pull and restart PM2
+# manage-figurio.sh
+# Script to deploy or manage Figurio backend via SSH and PM2
 
 # --- CONFIGURATION ---
 SERVER_USER="root"
 SERVER_HOST="139.59.143.44"
 PROJECT_DIR="/var/www/figurio"
-PM2_PROCESS_NAME="figurio-backend"   # meno procesu v PM2
+PM2_PROCESS_NAME="figurio-backend"
+
+# --- USAGE ---
+usage() {
+    echo "Usage: $0 [-d | -s | -k]"
+    echo "  -d    Deploy (git pull + restart backend)"
+    echo "  -s    Start backend (PM2)"
+    echo "  -k    Stop backend (PM2)"
+    exit 1
+}
+
+if [ $# -eq 0 ]; then
+    usage
+fi
 
 # --- SCRIPT ---
-echo "Connecting to server $SERVER_HOST as $SERVER_USER..."
 ssh $SERVER_USER@$SERVER_HOST << EOF
-    echo "Navigating to project directory: $PROJECT_DIR"
     cd $PROJECT_DIR || exit
-    echo "Pulling latest changes from Git..."
-    git pull
-    echo "Restarting backend with PM2..."
-    pm2 restart $PM2_PROCESS_NAME
-    echo "Update and restart finished!"
+    case "$1" in
+        -d)
+            echo "Deploying latest version..."
+            git pull
+            pm2 restart $PM2_PROCESS_NAME
+            echo "Deployment done."
+            ;;
+        -s)
+            echo "Starting backend..."
+            pm2 start $PM2_PROCESS_NAME
+            echo "Backend started."
+            ;;
+        -k)
+            echo "Stopping backend..."
+            pm2 stop $PM2_PROCESS_NAME
+            echo "Backend stopped."
+            ;;
+        *)
+            echo "Invalid option."
+            exit 1
+            ;;
+    esac
 EOF
-
-echo "Done."
