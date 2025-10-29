@@ -2,17 +2,22 @@ const db = require("./services/db");
 
 async function init() {
   try {
+    // Drop tables first (in correct order to respect FK constraints)
+    await db.query(`DROP TABLE IF EXISTS events`);
+    await db.query(`DROP TABLE IF EXISTS visits`);
+    await db.query(`DROP TABLE IF EXISTS users`);
+
     // Users table
     await db.query(`
-      CREATE TABLE IF NOT EXISTS users (
+      CREATE TABLE users (
         userId VARCHAR(255) NOT NULL PRIMARY KEY,
-	timestamp DATETIME DEFAULT CURRENT_TIMESTAMP
+        timestamp DATETIME DEFAULT CURRENT_TIMESTAMP
       )
     `);
 
     // Visits table
     await db.query(`
-      CREATE TABLE IF NOT EXISTS visits (
+      CREATE TABLE visits (
         visitId INT AUTO_INCREMENT PRIMARY KEY,
         userId VARCHAR(255) NOT NULL,
         timestamp DATETIME DEFAULT CURRENT_TIMESTAMP,
@@ -26,9 +31,9 @@ async function init() {
 
     // Events table
     await db.query(`
-      CREATE TABLE IF NOT EXISTS events (
+      CREATE TABLE events (
         eventId INT AUTO_INCREMENT PRIMARY KEY,
-        userId VARCHAR(50) NOT NULL,
+        userId VARCHAR(255) NOT NULL,
         eventType VARCHAR(50) NOT NULL,
         data JSON,
         timestamp DATETIME DEFAULT CURRENT_TIMESTAMP,
@@ -36,7 +41,7 @@ async function init() {
       )
     `);
 
-    console.log("Tables created successfully");
+    console.log("Tables created successfully (all previous data removed)");
     process.exit(0);
   } catch (err) {
     console.error("Error creating tables:", err);
