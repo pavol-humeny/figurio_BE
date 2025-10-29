@@ -1,25 +1,5 @@
 const db = require("../services/db");
 
-// Add a new user (based on OpenAPI spec)
-exports.addUser = async (req, res) => {
-  const { userId } = req.body; // Expecting only userId in request body
-  if (!userId) {
-    return res.status(400).json({ error: "Missing userId in request body" });
-  }
-
-  try {
-    await db.query("INSERT INTO users (userId) VALUES (?)", [userId]);
-    res.status(201).json({ message: "User created", userId });
-  } catch (err) {
-    console.error(err);
-    // Handle duplicate key or constraint error nicely
-    if (err.code === "ER_DUP_ENTRY") {
-      return res.status(409).json({ error: "User already exists" });
-    }
-    res.status(500).send("Server error");
-  }
-};
-
 exports.getAllUsers = async (req, res) => {
   try {
     const [rows] = await db.query(`
@@ -49,9 +29,24 @@ exports.getUserVisits = async (req, res) => {
   }
 };
 
+// Add user visit – create user automatically if not exists
 exports.addUserVisit = async (req, res) => {
   const userId = req.params.userId;
+
   try {
+    // Check if user exists
+    const [userRows] = await db.query(
+      "SELECT userId FROM users WHERE userId = ?",
+      [userId]
+    );
+
+    // If not exists, create the user
+    if (userRows.length === 0) {
+      await db.query("INSERT INTO users (userId) VALUES (?)", [userId]);
+      console.log(`Created new user with userId: ${userId}`);
+    }
+
+    // Add a visit
     await db.query("INSERT INTO visits (userId) VALUES (?)", [userId]);
     res.status(201).send("Visit saved");
   } catch (err) {
