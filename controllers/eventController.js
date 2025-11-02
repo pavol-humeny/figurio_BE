@@ -140,11 +140,11 @@ exports.getKeyboardShortcutsEvents = async (req, res) => {
   try {
     const [rows] = await db.query(`
       SELECT 
-        JSON_UNQUOTE(JSON_EXTRACT(data, '$.keys')) AS keys,
+        JSON_UNQUOTE(JSON_EXTRACT(data, '$.keys')) AS \`keys\`,
         COUNT(*) AS numberOfShortcuts
       FROM events
       WHERE eventType = 'keyboardShortcuts'
-      GROUP BY keys
+      GROUP BY \`keys\`
       ORDER BY numberOfShortcuts DESC
     `);
     res.json(rows);
