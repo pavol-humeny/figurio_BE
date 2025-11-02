@@ -100,3 +100,32 @@ exports.getVisitsByCountry = async (req, res) => {
     res.status(500).send("Server error");
   }
 };
+
+// Get all visits
+// [{date, allVisits, newUsers}, ...]
+exports.getAllVisits = async (req, res) => {
+  try {
+    const [rows] = await db.query(`
+      SELECT
+        DATE(v.timestamp) AS date,
+        COUNT(*) AS allVisits,
+        SUM(CASE 
+              WHEN v.timestamp = u.first_visit THEN 1 
+              ELSE 0 
+            END) AS newUsers
+      FROM visits v
+      JOIN (
+        SELECT userId, MIN(timestamp) AS first_visit
+        FROM visits
+        GROUP BY userId
+      ) u ON u.userId = v.userId
+      GROUP BY date
+      ORDER BY date DESC
+    `);
+
+    res.json(rows);
+  } catch (err) {
+    console.error(err);
+    res.status(500).send("Server error");
+  }
+};
