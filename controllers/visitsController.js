@@ -101,9 +101,9 @@ exports.getVisitsByCountry = async (req, res) => {
   }
 };
 
-// Get all visits
+// Get all visits by day
 // [{date, allVisits, newUsers}, ...]
-exports.getAllVisits = async (req, res) => {
+exports.getVisitsByDay = async (req, res) => {
   try {
     const [rows] = await db.query(`
       SELECT
