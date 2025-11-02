@@ -134,22 +134,22 @@ exports.getOpenModalEvents = async (req, res) => {
   }
 };
 
-// Get keyBoardShortcut events
-// [{keys, numberOfUses}, ...]
-exports.getKeyBoardShortcutEvents = async (req, res) => {
+// Get keyboardShortcuts events
+// [{keys, numberOfShortcuts}, ...]
+exports.getKeyboardShortcutsEvents = async (req, res) => {
   try {
     const [rows] = await db.query(`
       SELECT 
         JSON_UNQUOTE(JSON_EXTRACT(data, '$.keys')) AS keys,
-        COUNT(*) AS numberOfUses
+        COUNT(*) AS numberOfShortcuts
       FROM events
-      WHERE eventType = 'keyBoardShortcut'
+      WHERE eventType = 'keyboardShortcuts'
       GROUP BY keys
-      ORDER BY numberOfUses DESC
+      ORDER BY numberOfShortcuts DESC
     `);
     res.json(rows);
   } catch (err) {
-    console.error("Error fetching keyBoardShortcut events:", err);
+    console.error("Error fetching keyboardShortcuts events:", err);
     res.status(500).json({ message: "Internal server error" });
   }
 };

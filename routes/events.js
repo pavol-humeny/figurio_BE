@@ -8,9 +8,6 @@ router.get("/toggleTool", eventController.getToggleToolEvents);
 router.get("/uploadImage", eventController.getUploadImageEvents);
 router.get("/exportImage", eventController.getExportImageEvents);
 router.get("/openModal", eventController.getOpenModalEvents);
-router.get("/keyBoardShortcut", eventController.getKeyBoardShortcutEvents);
-
-
-
+router.get("/keyboardShortcuts", eventController.getKeyboardShortcutsEvents);
 
 module.exports = router;
