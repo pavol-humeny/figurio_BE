@@ -41,8 +41,8 @@ exports.getEventsOverview = async (req, res) => {
         COUNT(*) AS totalEvents,
         SUM(eventType = 'fileUpload') AS numberOfUploads,
         SUM(eventType = 'exportImage') AS numberOfExport,
-        SUM(eventType = 'toggleTool' OR eventType = 'applyOperation') AS numberOfUseTool,
-        SUM(eventType = 'keyBoardShortcut') AS numberOfKeyboardShortcuts
+        SUM(eventType = 'keyBoardShortcut') AS numberOfKeyboardShortcuts,
+        SUM(eventType = 'toggleTool' OR eventType = 'applyOperation') AS numberOfUseTool
       FROM events
     `);
 
