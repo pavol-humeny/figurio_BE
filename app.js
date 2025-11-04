@@ -1,3 +1,5 @@
+const fs = require("fs");
+const https = require("https");
 const express = require("express");
 const cors = require("cors");
 const bodyParser = require("body-parser");
@@ -16,4 +18,14 @@ app.use("/api/events", eventRoutes);
 app.use("/api/visits", visitsRoutes);
 
 const PORT = process.env.PORT || 3000;
-app.listen(PORT, () => console.log(`Server running on port ${PORT}`));
+
+// Load SSL cert and key
+const sslOptions = {
+  key: fs.readFileSync("/var/www/figurio/certs/server.key"),
+  cert: fs.readFileSync("/var/www/figurio/certs/server.crt"),
+};
+
+// Start HTTPS server
+https.createServer(sslOptions, app).listen(PORT, () => {
+  console.log(`Server running on https://139.59.143.44:${PORT}`);
+});
