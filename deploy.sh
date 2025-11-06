@@ -4,7 +4,7 @@
 
 # --- CONFIGURATION ---
 SERVER_USER="root"
-SERVER_HOST="139.59.143.44"
+SERVER_HOST="104.248.248.66"
 PROJECT_DIR="/var/www/figurio"
 PM2_PROCESS_NAME="figurio-backend"
 
