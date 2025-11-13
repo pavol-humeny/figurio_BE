@@ -10,7 +10,17 @@ const eventRoutes = require("./routes/events");
 const visitsRoutes = require("./routes/visits");
 
 const app = express();
-app.use(cors());
+
+// Enable CORS for all routes
+const cors = require("cors");
+app.use(
+  cors({
+    origin: "*", // Allow requests from anywhere
+    methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
+    allowedHeaders: ["Origin", "Content-Type", "Accept", "Authorization"],
+  })
+);
+
 app.use(bodyParser.json());
 
 app.use("/api/users", userRoutes);
