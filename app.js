@@ -12,7 +12,7 @@ const app = express();
 // enable CORS for preflight requests
 app.use(
   cors({
-    origin: "https://pavol-humeny.github.io",
+    origin: ["https://pavol-humeny.github.io", "http://localhost:5173"],
     methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
     credentials: true,
     allowedHeaders: ["Content-Type", "Authorization"],
