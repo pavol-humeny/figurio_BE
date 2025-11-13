@@ -9,7 +9,6 @@ const visitsRoutes = require("./routes/visits");
 
 const app = express();
 
-// enable CORS for preflight requests
 app.use(
   cors({
     origin: ["https://pavol-humeny.github.io", "http://localhost:5173"],
@@ -19,7 +18,6 @@ app.use(
   })
 );
 
-// also handle OPTIONS manually
 app.options("*", cors());
 
 app.use(bodyParser.json());
