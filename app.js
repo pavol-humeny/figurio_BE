@@ -9,22 +9,11 @@ const visitsRoutes = require("./routes/visits");
 
 const app = express();
 
-const allowedOrigins = [
-  "http://localhost:5173",
-  "https://pavol-humeny.github.io",
-];
-
 app.use(
   cors({
-    origin: function (origin, callback) {
-      if (!origin) return callback(null, true); // for non-browser requests
-      if (allowedOrigins.indexOf(origin) === -1) {
-        return callback(new Error("CORS not allowed"), false);
-      }
-      return callback(null, true);
-    },
-    credentials: true,
+    origin: ["https://pavol-humeny.github.io", "http://localhost:5173"],
     methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
+    credentials: true,
     allowedHeaders: ["Content-Type", "Authorization"],
   })
 );
