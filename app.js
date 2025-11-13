@@ -11,7 +11,7 @@ const app = express();
 
 app.use(
   cors({
-    origin: "*",
+    origin: "https://pavol-humeny.github.io",
     methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
     allowedHeaders: ["Origin", "Content-Type", "Accept", "Authorization"],
   })
