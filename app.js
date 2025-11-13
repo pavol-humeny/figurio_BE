@@ -1,5 +1,3 @@
-const fs = require("fs");
-const https = require("https");
 const express = require("express");
 const cors = require("cors");
 const bodyParser = require("body-parser");
@@ -11,15 +9,13 @@ const visitsRoutes = require("./routes/visits");
 
 const app = express();
 
-// Enable CORS for all routes
 app.use(
   cors({
-    origin: "*", // Allow requests from anywhere
+    origin: "*",
     methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
     allowedHeaders: ["Origin", "Content-Type", "Accept", "Authorization"],
   })
 );
-
 app.use(bodyParser.json());
 
 app.use("/api/users", userRoutes);
@@ -28,13 +24,6 @@ app.use("/api/visits", visitsRoutes);
 
 const PORT = process.env.PORT || 3000;
 
-// Load SSL cert and key
-const sslOptions = {
-  key: fs.readFileSync("/var/www/figurio/certs/server.key"),
-  cert: fs.readFileSync("/var/www/figurio/certs/server.crt"),
-};
-
-// Start HTTPS server
-https.createServer(sslOptions, app).listen(PORT, () => {
-  console.log(`Server running on https://104.248.248.66:${PORT}`);
+app.listen(PORT, () => {
+  console.log(`Server running on http://localhost:${PORT}`);
 });
