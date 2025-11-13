@@ -12,7 +12,6 @@ const visitsRoutes = require("./routes/visits");
 const app = express();
 
 // Enable CORS for all routes
-const cors = require("cors");
 app.use(
   cors({
     origin: "*", // Allow requests from anywhere
