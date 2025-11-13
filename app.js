@@ -9,13 +9,18 @@ const visitsRoutes = require("./routes/visits");
 
 const app = express();
 
+// enable CORS for preflight requests
 app.use(
   cors({
-    origin: "https://pavol-humeny.github.io", // alebo '*' ak nechceš obmedzenia
-    methods: ["GET", "POST", "PUT", "DELETE"],
+    origin: "https://pavol-humeny.github.io",
+    methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
     credentials: true,
+    allowedHeaders: ["Content-Type", "Authorization"],
   })
 );
+
+// also handle OPTIONS manually
+app.options("*", cors());
 
 app.use(bodyParser.json());
 
