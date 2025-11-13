@@ -11,11 +11,12 @@ const app = express();
 
 app.use(
   cors({
-    origin: "https://pavol-humeny.github.io",
-    methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
-    allowedHeaders: ["Origin", "Content-Type", "Accept", "Authorization"],
+    origin: "https://pavol-humeny.github.io", // alebo '*' ak nechceš obmedzenia
+    methods: ["GET", "POST", "PUT", "DELETE"],
+    credentials: true,
   })
 );
+
 app.use(bodyParser.json());
 
 app.use("/api/users", userRoutes);
