@@ -75,16 +75,16 @@ exports.getToggleToolEvents = async (req, res) => {
 };
 
 // Get applyOperation events
-// [{operation, numberOfApplies}, ...]
+// [{tool, numberOfApplies}, ...]
 exports.getApplyOperationEvents = async (req, res) => {
   try {
     const [rows] = await db.query(`
       SELECT 
-        JSON_UNQUOTE(JSON_EXTRACT(data, '$.operation')) AS operation,
+        JSON_UNQUOTE(JSON_EXTRACT(data, '$.tool')) AS tool,
         COUNT(*) AS numberOfApplies
       FROM events
       WHERE eventType = 'applyOperation'
-      GROUP BY operation
+      GROUP BY tool
       ORDER BY numberOfApplies DESC
     `);
     res.json(rows);
