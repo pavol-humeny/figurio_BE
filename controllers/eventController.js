@@ -74,6 +74,26 @@ exports.getToggleToolEvents = async (req, res) => {
   }
 };
 
+// Get applyOperation events
+// [{operation, numberOfApplies}, ...]
+exports.getApplyOperationEvents = async (req, res) => {
+  try {
+    const [rows] = await db.query(`
+      SELECT 
+        JSON_UNQUOTE(JSON_EXTRACT(data, '$.operation')) AS operation,
+        COUNT(*) AS numberOfApplies
+      FROM events
+      WHERE eventType = 'applyOperation'
+      GROUP BY operation
+      ORDER BY numberOfApplies DESC
+    `);
+    res.json(rows);
+  } catch (err) {
+    console.error("Error fetching applyOperation events:", err);
+    res.status(500).json({ message: "Internal server error" });
+  }
+};
+
 // Get uploadImage events
 // [{fileFormat, numberOfUploads}, ...]
 exports.getUploadImageEvents = async (req, res) => {
