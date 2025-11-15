@@ -37,13 +37,27 @@ exports.addUserVisit = async (req, res) => {
 
   try {
     // Get IP and User-Agent
-    const ip = req.ip || req.connection.remoteAddress;
+    let ip =
+      req.headers["x-forwarded-for"]?.split(",")[0].trim() ||
+      req.ip ||
+      req.connection.remoteAddress;
+    if (ip.startsWith("::ffff:")) ip = ip.split("::ffff:")[1];
     const userAgent = req.headers["user-agent"] || "unknown";
 
+    // Fallback for local dev (localhost)
+    const isLocalhost = ip === "127.0.0.1" || ip === "::1";
+    if (isLocalhost) {
+      console.log(`[DEBUG] Localhost visit detected, skipping GeoIP`);
+    }
+
     // GeoIP lookup
-    const geo = geoip.lookup(ip) || {};
-    const country = geo.country || null;
-    const city = geo.city || null;
+    const geo = !isLocalhost ? geoip.lookup(ip) || {} : {};
+    const country = geo.country || (isLocalhost ? "DEV" : null);
+    const city = geo.city || (isLocalhost ? "DEV" : null);
+
+    console.log(
+      `[DEBUG] UserID: ${userId}, IP: ${ip}, Country: ${country}, City: ${city}, UA: ${userAgent}`
+    );
 
     // Check if user exists
     const [userRows] = await db.query(
@@ -53,15 +67,16 @@ exports.addUserVisit = async (req, res) => {
 
     if (userRows.length === 0) {
       await db.query("INSERT INTO users (userId) VALUES (?)", [userId]);
-      console.log(`Created new user with userId: ${userId}`);
+      console.log(`[DEBUG] Created new user with userId: ${userId}`);
     }
 
-    // Add visit with IP, User-Agent, and geolocation
+    // Add visit
     await db.query(
       "INSERT INTO visits (userId, ip, userAgent, country, city) VALUES (?, ?, ?, ?, ?)",
       [userId, ip, userAgent, country, city]
     );
 
+    console.log(`[DEBUG] Visit saved for user ${userId}`);
     res.status(201).send("Visit saved");
   } catch (err) {
     console.error(err);

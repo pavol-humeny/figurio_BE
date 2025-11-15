@@ -9,6 +9,8 @@ const visitsRoutes = require("./routes/visits");
 
 const app = express();
 
+app.set("trust proxy", true); // Enable to get correct client IP behind proxies
+
 // CORS configuration
 app.use(
   cors({
