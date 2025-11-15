@@ -34,21 +34,21 @@ exports.getUserVisits = async (req, res) => {
 // Add user visit – create user automatically if not exists
 exports.addUserVisit = async (req, res) => {
   const userId = req.params.userId;
+  const ipFromClient = req.body.ip; // FE posiela IP
 
   try {
-    // Get IP and User-Agent
+    // Get IP from client or fallback to headers
     let ip =
+      ipFromClient ||
       req.headers["x-forwarded-for"]?.split(",")[0].trim() ||
       req.ip ||
       req.connection.remoteAddress;
     if (ip.startsWith("::ffff:")) ip = ip.split("::ffff:")[1];
+
     const userAgent = req.headers["user-agent"] || "unknown";
 
-    // Fallback for local dev (localhost)
+    // Determine if localhost
     const isLocalhost = ip === "127.0.0.1" || ip === "::1";
-    if (isLocalhost) {
-      console.log(`[DEBUG] Localhost visit detected, skipping GeoIP`);
-    }
 
     // GeoIP lookup
     const geo = !isLocalhost ? geoip.lookup(ip) || {} : {};
