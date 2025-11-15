@@ -9,9 +9,14 @@ const visitsRoutes = require("./routes/visits");
 
 const app = express();
 
+// CORS configuration
 app.use(
   cors({
-    origin: ["https://pavol-humeny.github.io", "http://localhost:5173"],
+    origin: [
+      "https://pavol-humeny.github.io",
+      "https://figurio.online",
+      "http://localhost:5173", // allow local dev server
+    ],
     methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
     credentials: true,
     allowedHeaders: ["Content-Type", "Authorization"],
