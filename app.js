@@ -6,6 +6,7 @@ require("dotenv").config();
 const userRoutes = require("./routes/users");
 const eventRoutes = require("./routes/events");
 const visitsRoutes = require("./routes/visits");
+const contactRoutes = require("./routes/contact");
 
 const app = express();
 
@@ -30,6 +31,7 @@ app.use(bodyParser.json());
 app.use("/api/users", userRoutes);
 app.use("/api/events", eventRoutes);
 app.use("/api/visits", visitsRoutes);
+app.use("/api/contact", contactRoutes);
 
 const PORT = process.env.PORT || 3000;
 
