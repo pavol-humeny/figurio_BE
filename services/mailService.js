@@ -2,16 +2,19 @@ const nodemailer = require("nodemailer");
 
 // Configure the transporter
 const transporter = nodemailer.createTransport({
-  host: process.env.MAIL_HOST, // e.g. smtp.gmail.com
-  port: process.env.MAIL_PORT, // usually 465 or 587
-  secure: process.env.MAIL_SECURE === "true",
+  host: process.env.MAIL_HOST,
+  port: process.env.MAIL_PORT,
+  secure: false,
   auth: {
-    user: process.env.MAIL_USER, // login
-    pass: process.env.MAIL_PASS, // password / app password
+    user: process.env.MAIL_USER,
+    pass: process.env.MAIL_PASS,
   },
 });
 
 exports.sendContactEmail = async ({ name, email, subject, message }) => {
+  // Debug print
+  console.log("Preparing to send email:", { name, email, subject, message });
+
   // Construct the email
   const mailOptions = {
     from: `"${name}" <${email}>`,
