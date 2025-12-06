@@ -3,8 +3,6 @@ const mailService = require("../services/mailService");
 exports.sendContactForm = async (req, res) => {
   const { name, email, subject, message } = req.body;
 
-  console.log("Received contact form data:", { name, email, subject, message });
-
   // Basic validation
   if (!name || !email || !subject || !message) {
     return res.status(400).send("Missing required fields.");
