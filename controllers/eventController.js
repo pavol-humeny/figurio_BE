@@ -39,7 +39,7 @@ exports.getEventsOverview = async (req, res) => {
     const [rows] = await db.query(`
       SELECT 
         COUNT(*) AS totalEvents,
-        SUM(eventType = 'fileUpload') AS numberOfUploads,
+        SUM(eventType = 'uploadImage') AS numberOfUploads,
         SUM(eventType = 'exportImage') AS numberOfExport,
         SUM(eventType = 'keyboardShortcuts') AS numberOfKeyboardShortcuts,
         SUM(eventType = 'applyOperation') AS numberOfUseTool
@@ -103,13 +103,13 @@ exports.getUploadImageEvents = async (req, res) => {
         JSON_UNQUOTE(JSON_EXTRACT(data, '$.fileFormat')) AS fileFormat,
         COUNT(*) AS numberOfUploads
       FROM events
-      WHERE eventType = 'fileUpload'
+      WHERE eventType = 'uploadImage'
       GROUP BY fileFormat
       ORDER BY numberOfUploads DESC
     `);
     res.json(rows);
   } catch (err) {
-    console.error("Error fetching fileUpload events:", err);
+    console.error("Error fetching uploadImage events:", err);
     res.status(500).json({ message: "Internal server error" });
   }
 };
