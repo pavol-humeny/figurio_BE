@@ -34,7 +34,7 @@ exports.getUserVisits = async (req, res) => {
 // Add user visit – create user automatically if not exists
 exports.addUserVisit = async (req, res) => {
   const userId = req.params.userId;
-  const ipFromClient = req.body.ip; // FE posiela IP
+  const ipFromClient = req.body.ip; // FE send IP
 
   try {
     // Get IP from client or fallback to headers
