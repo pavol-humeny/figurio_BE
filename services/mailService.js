@@ -2,7 +2,7 @@ const { Resend } = require("resend");
 const resend = new Resend(process.env.RESEND_API_KEY);
 
 exports.sendContactEmail = async ({ name, email, subject, message }) => {
-  const message = `
+  const messageBody = `
     <h2>New contact form message</h2>
     <p><strong>Name:</strong> ${name}</p>
     <p><strong>Email:</strong> ${email}</p>
@@ -12,11 +12,11 @@ exports.sendContactEmail = async ({ name, email, subject, message }) => {
 
   // Send via Resend HTTP API
   const { data, error } = await resend.emails.send({
-    from: `"${name}" <${process.env.MAIL_FROM}>`, 
+    from: `"${name}" <${process.env.MAIL_FROM}>`,
     to: process.env.MAIL_TO,
     reply_to: email,
     subject,
-    html: message,
+    html: messageBody,
   });
 
   if (error) throw error;
@@ -32,7 +32,7 @@ exports.sendVisitDuringMaintenanceEmail = async ({
   time,
 }) => {
   const subject = `Maintenance Visit from User ${userId}`;
-  const message = `
+  const messageBody = `
     <h2>User Visit During Maintenance</h2>
     <p><strong>User ID:</strong> ${userId}</p>
     <p><strong>IP Address:</strong> ${ip}</p>
@@ -47,7 +47,7 @@ exports.sendVisitDuringMaintenanceEmail = async ({
     from: `"Maintenance Bot" <${process.env.MAIL_FROM}>`,
     to: process.env.MAIL_TO,
     subject,
-    html: message,
+    html: messageBody,
   });
 
   if (error) throw error;
