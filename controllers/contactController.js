@@ -43,8 +43,20 @@ exports.visitDuringMaintenance = async (req, res) => {
     const country = geo.country || (isLocalhost ? "DEV" : null);
     const city = geo.city || (isLocalhost ? "DEV" : null);
 
+    // Set formatted time
+    const now = new Date();
+
+    const time = now.toLocaleString("sk-SK", {
+      day: "2-digit",
+      month: "2-digit",
+      year: "numeric",
+      hour: "2-digit",
+      minute: "2-digit",
+      second: "2-digit",
+    });
+
     console.log(
-      `[DEBUG] UserID: ${userId}, IP: ${ip}, Country: ${country}, City: ${city}, UA: ${userAgent}`,
+      `[DEBUG] UserID: ${userId}, IP: ${ip}, Country: ${country}, City: ${city}, UA: ${userAgent}, Time: ${time}`,
     );
 
     // Send email notification
@@ -54,7 +66,7 @@ exports.visitDuringMaintenance = async (req, res) => {
       country,
       city,
       userAgent,
-      time: new Date().toISOString(),
+      time,
     });
 
     res.status(200).send("Maintenance visit email sent successfully.");
