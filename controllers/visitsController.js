@@ -148,19 +148,24 @@ exports.getVisitsByDayFullRange = async (req, res) => {
       first_visits AS (
         SELECT
           userId,
-          DATE(MIN(timestamp)) AS first_visit_date
+          MIN(timestamp) AS first_visit
         FROM visits
         GROUP BY userId
       )
       SELECT
         d.date AS date,
         COUNT(v.userId) AS allVisits,
-        COUNT(f.userId) AS newUsers
+        SUM(
+          CASE
+            WHEN v.timestamp = f.first_visit THEN 1
+            ELSE 0
+          END
+        ) AS newUsers
       FROM dates d
       LEFT JOIN visits v
         ON DATE(v.timestamp) = d.date
       LEFT JOIN first_visits f
-        ON f.first_visit_date = d.date
+        ON f.userId = v.userId
       GROUP BY d.date
       ORDER BY d.date ASC
     `);
