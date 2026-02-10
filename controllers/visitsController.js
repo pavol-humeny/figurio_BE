@@ -129,3 +129,36 @@ exports.getVisitsByDay = async (req, res) => {
     res.status(500).send("Server error");
   }
 };
+
+// Get visits for ALL days (from first visit to today)
+// [{ date (YYYY-MM-DD), allVisits, uniqueVisits }, ...]
+exports.getVisitsByDayFullRange = async (req, res) => {
+  try {
+    const [rows] = await db.query(`
+      WITH RECURSIVE dates AS (
+        SELECT DATE(MIN(timestamp)) AS date
+        FROM visits
+
+        UNION ALL
+
+        SELECT DATE_ADD(date, INTERVAL 1 DAY)
+        FROM dates
+        WHERE date < CURDATE()
+      )
+      SELECT
+        d.date AS date,
+        COUNT(v.userId) AS allVisits,
+        COUNT(DISTINCT v.userId) AS uniqueVisits
+      FROM dates d
+      LEFT JOIN visits v
+        ON DATE(v.timestamp) = d.date
+      GROUP BY d.date
+      ORDER BY d.date ASC
+    `);
+
+    res.json(rows);
+  } catch (err) {
+    console.error(err);
+    res.status(500).send("Server error");
+  }
+};
