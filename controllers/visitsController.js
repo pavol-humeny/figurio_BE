@@ -131,7 +131,7 @@ exports.getVisitsByDay = async (req, res) => {
 };
 
 // Get visits for ALL days (from first visit to today)
-// [{ date (YYYY-MM-DD), allVisits, uniqueVisits }, ...]
+// [{ date (YYYY-MM-DD), allVisits, newUsers }, ...]
 exports.getVisitsByDayFullRange = async (req, res) => {
   try {
     const [rows] = await db.query(`
@@ -144,14 +144,23 @@ exports.getVisitsByDayFullRange = async (req, res) => {
         SELECT DATE_ADD(date, INTERVAL 1 DAY)
         FROM dates
         WHERE date < CURDATE()
+      ),
+      first_visits AS (
+        SELECT
+          userId,
+          DATE(MIN(timestamp)) AS first_visit_date
+        FROM visits
+        GROUP BY userId
       )
       SELECT
         d.date AS date,
         COUNT(v.userId) AS allVisits,
-        COUNT(DISTINCT v.userId) AS uniqueVisits
+        COUNT(f.userId) AS newUsers
       FROM dates d
       LEFT JOIN visits v
         ON DATE(v.timestamp) = d.date
+      LEFT JOIN first_visits f
+        ON f.first_visit_date = d.date
       GROUP BY d.date
       ORDER BY d.date ASC
     `);
