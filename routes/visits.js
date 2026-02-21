@@ -5,7 +5,7 @@ const visitsController = require("../controllers/visitsController");
 router.get("/", visitsController.getVisitsByDay);
 router.get("/allVisits", visitsController.getAllVisitsCount);
 router.get("/uniqueVisits", visitsController.getUniqueVisitsCount);
-router.get("/lastSevenDaysVisits", visitsController.getLastSevenDaysVisits);
+router.get("/lastDaysVisits", visitsController.getLastDaysVisits);
 router.get("/visitsByCountry", visitsController.getVisitsByCountry);
 router.get("/byDayFullRange", visitsController.getVisitsByDayFullRange);
 

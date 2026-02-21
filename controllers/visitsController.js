@@ -51,9 +51,9 @@ exports.getUniqueVisitsCount = async (req, res) => {
   }
 };
 
-// Get visits for the last seven days
+// Get visits for the last days
 // [{date (YYYY-MM-DD), allVisits, newUsers}, ...]
-exports.getLastSevenDaysVisits = async (req, res) => {
+exports.getLastDaysVisits = async (req, res) => {
   try {
     const [rows] = await db.query(`
       SELECT
@@ -69,7 +69,6 @@ exports.getLastSevenDaysVisits = async (req, res) => {
         FROM visits
         GROUP BY userId
       ) u ON u.userId = v.userId
-      WHERE v.timestamp >= CURDATE() - INTERVAL 7 DAY
       GROUP BY date
       ORDER BY date DESC
     `);
