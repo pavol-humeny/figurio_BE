@@ -119,7 +119,9 @@ exports.getUploadImageEvents = async (req, res) => {
 exports.getExportImageEvents = async (req, res) => {
   try {
     const [rows] = await db.query(`
-      SELECT fileFormat, SUM(numberOfExports) AS numberOfExports
+      SELECT 
+        fileFormat,
+        CAST(SUM(numberOfExports) AS UNSIGNED) AS numberOfExports
       FROM (
         -- Standard exportImage events
         SELECT 
