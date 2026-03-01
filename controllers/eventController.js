@@ -114,22 +114,38 @@ exports.getUploadImageEvents = async (req, res) => {
   }
 };
 
-// Get exportImage events
+// Get exportImage events including copy to clipboard
 // [{fileFormat, numberOfExports}, ...]
 exports.getExportImageEvents = async (req, res) => {
   try {
     const [rows] = await db.query(`
-      SELECT 
-        JSON_UNQUOTE(JSON_EXTRACT(data, '$.fileFormat')) AS fileFormat,
-        COUNT(*) AS numberOfExports
-      FROM events
-      WHERE eventType = 'exportImage'
+      SELECT fileFormat, SUM(numberOfExports) AS numberOfExports
+      FROM (
+        -- Standard exportImage events
+        SELECT 
+          JSON_UNQUOTE(JSON_EXTRACT(data, '$.fileFormat')) AS fileFormat,
+          COUNT(*) AS numberOfExports
+        FROM events
+        WHERE eventType = 'exportImage'
+        GROUP BY fileFormat
+
+        UNION ALL
+
+        -- Copy to clipboard as virtual export format
+        SELECT
+          'copyToClipboard' AS fileFormat,
+          COUNT(*) AS numberOfExports
+        FROM events
+        WHERE eventType = 'buttonClicked'
+          AND JSON_UNQUOTE(JSON_EXTRACT(data, '$.button')) = 'copyImageToClipboard'
+      ) AS combined
       GROUP BY fileFormat
       ORDER BY numberOfExports DESC
     `);
+
     res.json(rows);
   } catch (err) {
-    console.error("Error fetching exportImage events:", err);
+    console.error("Error fetching export events:", err);
     res.status(500).json({ message: "Internal server error" });
   }
 };
