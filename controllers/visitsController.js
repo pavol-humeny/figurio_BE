@@ -81,51 +81,37 @@ exports.getLastDaysVisits = async (req, res) => {
 };
 
 // Get average selected events per visit by day
-// [{
-//   date,
-//   allVisits,
-//
-//   avgUploadImage, minUploadImage, maxUploadImage,
-//   avgExportImage, minExportImage, maxExportImage,
-//   avgApplyOperation, minApplyOperation, maxApplyOperation
-// }, ...]
+// [{ date, allVisits, avgUploadImage, avgExportImage, avgApplyOperation }, ...]
 exports.getAvgEventsPerVisitByDay = async (req, res) => {
   try {
     const [rows] = await db.query(`
-      WITH visit_event_counts AS (
-        SELECT
-          v.visitId,
-          DATE(v.timestamp) AS date,
-
-          SUM(CASE WHEN e.eventType = 'uploadImage' THEN 1 ELSE 0 END) AS uploadCount,
-          SUM(CASE WHEN e.eventType = 'exportImage' THEN 1 ELSE 0 END) AS exportCount,
-          SUM(CASE WHEN e.eventType = 'applyOperation' THEN 1 ELSE 0 END) AS operationCount
-
-        FROM visits v
-        LEFT JOIN events e
-          ON e.userId = v.userId
-          AND DATE(e.timestamp) = DATE(v.timestamp)
-
-        GROUP BY v.visitId, date
-      )
-
       SELECT
-        date,
-        COUNT(*) AS allVisits,
+        DATE(v.timestamp) AS date,
+        COUNT(DISTINCT v.visitId) AS allVisits,
 
-        ROUND(AVG(uploadCount), 2) AS avgUploadImage,
-        MIN(uploadCount) AS minUploadImage,
-        MAX(uploadCount) AS maxUploadImage,
+        ROUND(
+          SUM(CASE WHEN e.eventType = 'uploadImage' THEN 1 ELSE 0 END)
+          / NULLIF(COUNT(DISTINCT v.visitId), 0),
+          2
+        ) AS avgUploadImage,
 
-        ROUND(AVG(exportCount), 2) AS avgExportImage,
-        MIN(exportCount) AS minExportImage,
-        MAX(exportCount) AS maxExportImage,
+        ROUND(
+          SUM(CASE WHEN e.eventType = 'exportImage' THEN 1 ELSE 0 END)
+          / NULLIF(COUNT(DISTINCT v.visitId), 0),
+          2
+        ) AS avgExportImage,
 
-        ROUND(AVG(operationCount), 2) AS avgApplyOperation,
-        MIN(operationCount) AS minApplyOperation,
-        MAX(operationCount) AS maxApplyOperation
+        ROUND(
+          SUM(CASE WHEN e.eventType = 'applyOperation' THEN 1 ELSE 0 END)
+          / NULLIF(COUNT(DISTINCT v.visitId), 0),
+          2
+        ) AS avgApplyOperation
 
-      FROM visit_event_counts
+      FROM visits v
+      LEFT JOIN events e
+        ON e.userId = v.userId
+        AND DATE(e.timestamp) = DATE(v.timestamp)
+
       GROUP BY date
       ORDER BY date DESC
     `);
