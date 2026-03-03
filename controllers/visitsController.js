@@ -88,7 +88,8 @@ exports.getLastDaysVisits = async (req, res) => {
 //   avgUploadImage, minUploadImage, maxUploadImage,
 //   avgExportImage, minExportImage, maxExportImage,
 //   avgApplyOperation, minApplyOperation, maxApplyOperation
-// }, ...]exports.getAvgEventsPerVisitByDay = async (req, res) => {
+// }, ...]
+exports.getAvgEventsPerVisitByDay = async (req, res) => {
   try {
     const [rows] = await db.query(`
       WITH visit_event_counts AS (
