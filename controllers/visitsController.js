@@ -80,6 +80,49 @@ exports.getLastDaysVisits = async (req, res) => {
   }
 };
 
+// Get average selected events per visit by day
+// [{ date, allVisits, avgUploadImage, avgExportImage, avgApplyOperation }, ...]
+exports.getAvgEventsPerVisitByDay = async (req, res) => {
+  try {
+    const [rows] = await db.query(`
+      SELECT
+        DATE(v.timestamp) AS date,
+        COUNT(DISTINCT v.visitId) AS allVisits,
+
+        ROUND(
+          SUM(CASE WHEN e.eventType = 'uploadImage' THEN 1 ELSE 0 END)
+          / NULLIF(COUNT(DISTINCT v.visitId), 0),
+          2
+        ) AS avgUploadImage,
+
+        ROUND(
+          SUM(CASE WHEN e.eventType = 'exportImage' THEN 1 ELSE 0 END)
+          / NULLIF(COUNT(DISTINCT v.visitId), 0),
+          2
+        ) AS avgExportImage,
+
+        ROUND(
+          SUM(CASE WHEN e.eventType = 'applyOperation' THEN 1 ELSE 0 END)
+          / NULLIF(COUNT(DISTINCT v.visitId), 0),
+          2
+        ) AS avgApplyOperation
+
+      FROM visits v
+      LEFT JOIN events e
+        ON e.userId = v.userId
+        AND DATE(e.timestamp) = DATE(v.timestamp)
+
+      GROUP BY date
+      ORDER BY date DESC
+    `);
+
+    res.json(rows);
+  } catch (err) {
+    console.error(err);
+    res.status(500).send("Server error");
+  }
+};
+
 // Get visits grouped by country
 // [{country, visitCount}, ...]
 exports.getVisitsByCountry = async (req, res) => {

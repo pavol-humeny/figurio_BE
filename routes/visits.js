@@ -8,5 +8,9 @@ router.get("/uniqueVisits", visitsController.getUniqueVisitsCount);
 router.get("/lastDaysVisits", visitsController.getLastDaysVisits);
 router.get("/visitsByCountry", visitsController.getVisitsByCountry);
 router.get("/byDayFullRange", visitsController.getVisitsByDayFullRange);
+router.get(
+  "/avgEventsPerVisitByDay",
+  visitsController.getAvgEventsPerVisitByDay,
+);
 
 module.exports = router;
