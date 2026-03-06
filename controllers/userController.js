@@ -22,7 +22,7 @@ exports.getUserVisits = async (req, res) => {
       `SELECT visitId, timestamp, ip, userAgent, country, city
         FROM visits
         WHERE userId = ?`,
-      [userId]
+      [userId],
     );
     res.json(rows);
   } catch (err) {
@@ -56,13 +56,13 @@ exports.addUserVisit = async (req, res) => {
     const city = geo.city || (isLocalhost ? "DEV" : null);
 
     console.log(
-      `[DEBUG] UserID: ${userId}, IP: ${ip}, Country: ${country}, City: ${city}, UA: ${userAgent}`
+      `[DEBUG] UserID: ${userId}, IP: ${ip}, Country: ${country}, City: ${city}, UA: ${userAgent}`,
     );
 
     // Check if user exists
     const [userRows] = await db.query(
       "SELECT userId FROM users WHERE userId = ?",
-      [userId]
+      [userId],
     );
 
     if (userRows.length === 0) {
@@ -73,7 +73,7 @@ exports.addUserVisit = async (req, res) => {
     // Add visit
     await db.query(
       "INSERT INTO visits (userId, ip, userAgent, country, city) VALUES (?, ?, ?, ?, ?)",
-      [userId, ip, userAgent, country, city]
+      [userId, ip, userAgent, country, city],
     );
 
     console.log(`[DEBUG] Visit saved for user ${userId}`);
@@ -89,7 +89,7 @@ exports.getUserEvents = async (req, res) => {
   try {
     const [rows] = await db.query(
       "SELECT eventId, eventType, data, timestamp FROM events WHERE userId = ?",
-      [userId]
+      [userId],
     );
     res.json(rows);
   } catch (err) {
@@ -104,9 +104,25 @@ exports.addUserEvent = async (req, res) => {
   try {
     await db.query(
       "INSERT INTO events (userId, eventType, data) VALUES (?, ?, ?)",
-      [userId, eventType, JSON.stringify(data)]
+      [userId, eventType, JSON.stringify(data)],
     );
     res.status(201).send("Event saved");
+  } catch (err) {
+    console.error(err);
+    res.status(500).send("Server error");
+  }
+};
+
+// Add user session
+exports.addUserSession = async (req, res) => {
+  const userId = req.params.userId;
+  const { durationMs } = req.body;
+  try {
+    await db.query("INSERT INTO sessions (userId, durationMs) VALUES (?, ?)", [
+      userId,
+      durationMs,
+    ]);
+    res.status(201).send("Session saved");
   } catch (err) {
     console.error(err);
     res.status(500).send("Server error");

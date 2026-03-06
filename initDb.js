@@ -5,6 +5,7 @@ async function init() {
     // Drop tables first (in correct order to respect FK constraints)
     await db.query(`DROP TABLE IF EXISTS events`);
     await db.query(`DROP TABLE IF EXISTS visits`);
+    await db.query(`DROP TABLE IF EXISTS sessions`);
     await db.query(`DROP TABLE IF EXISTS users`);
 
     // Users table
@@ -25,6 +26,17 @@ async function init() {
         userAgent VARCHAR(255),
         country VARCHAR(50),
         city VARCHAR(50),
+        FOREIGN KEY (userId) REFERENCES users(userId) ON DELETE CASCADE
+      )
+    `);
+
+    // Sessions table
+    await db.query(`
+      CREATE TABLE sessions (
+        sessionId INT AUTO_INCREMENT PRIMARY KEY,
+        userId VARCHAR(255) NOT NULL,
+        timestamp DATETIME DEFAULT CURRENT_TIMESTAMP,
+        durationMs INT NOT NULL,
         FOREIGN KEY (userId) REFERENCES users(userId) ON DELETE CASCADE
       )
     `);
