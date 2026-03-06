@@ -122,6 +122,10 @@ exports.addUserSession = async (req, res) => {
       userId,
       durationMs,
     ]);
+
+    console.log(
+      `[DEBUG] Session saved for user ${userId} with duration ${durationMs}ms`,
+    );
     res.status(201).send("Session saved");
   } catch (err) {
     console.error(err);
