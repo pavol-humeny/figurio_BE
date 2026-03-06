@@ -143,9 +143,9 @@ exports.getUserSessions = async (req, res) => {
 
         COUNT(DISTINCT v.visitId) AS allVisits,
 
-        ROUND(MIN(s.durationMs) / 1000, 2) AS minSession,
-        ROUND(MAX(s.durationMs) / 1000, 2) AS maxSession,
-        ROUND(AVG(s.durationMs) / 1000, 2) AS avgSession
+        ROUND(MIN(s.durationMs) / 60000, 2) AS minSession,
+        ROUND(MAX(s.durationMs) / 60000, 2) AS maxSession,
+        ROUND(AVG(s.durationMs) / 60000, 2) AS avgSession
 
       FROM visits v
       LEFT JOIN sessions s
