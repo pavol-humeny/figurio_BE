@@ -132,3 +132,33 @@ exports.addUserSession = async (req, res) => {
     res.status(500).send("Server error");
   }
 };
+
+// Get session statistics by day
+// [{ date, allVisits, minSession, maxSession, avgSession }, ...]
+exports.getUserSessions = async (req, res) => {
+  try {
+    const [rows] = await db.query(`
+      SELECT
+        DATE(v.timestamp) AS date,
+
+        COUNT(DISTINCT v.visitId) AS allVisits,
+
+        ROUND(MIN(s.durationMs) / 1000, 2) AS minSession,
+        ROUND(MAX(s.durationMs) / 1000, 2) AS maxSession,
+        ROUND(AVG(s.durationMs) / 1000, 2) AS avgSession
+
+      FROM visits v
+      LEFT JOIN sessions s
+        ON s.userId = v.userId
+        AND DATE(s.timestamp) = DATE(v.timestamp)
+
+      GROUP BY date
+      ORDER BY date DESC
+    `);
+
+    res.json(rows);
+  } catch (err) {
+    console.error(err);
+    res.status(500).send("Server error");
+  }
+};

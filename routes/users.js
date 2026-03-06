@@ -8,5 +8,6 @@ router.post("/:userId/visits", userController.addUserVisit);
 router.get("/:userId/events", userController.getUserEvents);
 router.post("/:userId/events", userController.addUserEvent);
 router.post("/:userId/sessions", userController.addUserSession);
+router.get("/:userId/sessions", userController.getUserSessions);
 
 module.exports = router;
