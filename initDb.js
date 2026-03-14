@@ -33,12 +33,13 @@ async function init() {
     // Sessions table
     await db.query(`
       CREATE TABLE sessions (
-        sessionId INT AUTO_INCREMENT PRIMARY KEY,
+        sessionId VARCHAR(255) NOT NULL PRIMARY KEY,
         userId VARCHAR(255) NOT NULL,
         timestamp DATETIME DEFAULT CURRENT_TIMESTAMP,
+        lastHeartbeat DATETIME DEFAULT CURRENT_TIMESTAMP,
         durationMs INT NOT NULL,
         FOREIGN KEY (userId) REFERENCES users(userId) ON DELETE CASCADE
-      )
+      );
     `);
 
     // Events table

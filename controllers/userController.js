@@ -113,20 +113,32 @@ exports.addUserEvent = async (req, res) => {
   }
 };
 
-// Add user session
+// Add / update user session heartbeat
 exports.addUserSession = async (req, res) => {
   const userId = req.params.userId;
-  const { durationMs } = req.body;
+  const { sessionId, incrementMs } = req.body;
+
+  if (!sessionId || !incrementMs) {
+    return res.status(400).send("Missing sessionId or incrementMs");
+  }
+
   try {
-    await db.query("INSERT INTO sessions (userId, durationMs) VALUES (?, ?)", [
-      userId,
-      durationMs,
-    ]);
+    await db.query(
+      `
+      INSERT INTO sessions (sessionId, userId, durationMs, lastHeartbeat)
+      VALUES (?, ?, ?, CURRENT_TIMESTAMP)
+      ON DUPLICATE KEY UPDATE
+        durationMs = durationMs + VALUES(durationMs),
+        lastHeartbeat = CURRENT_TIMESTAMP
+      `,
+      [sessionId, userId, incrementMs],
+    );
 
     console.log(
-      `[DEBUG] Session saved for user ${userId} with duration ${durationMs}ms`,
+      `[DEBUG] Session heartbeat user=${userId} session=${sessionId} +${incrementMs}ms`,
     );
-    res.status(201).send("Session saved");
+
+    res.status(200).send("Session updated");
   } catch (err) {
     console.error(err);
     res.status(500).send("Server error");
@@ -139,21 +151,31 @@ exports.getUserSessions = async (req, res) => {
   try {
     const [rows] = await db.query(`
       SELECT
-        DATE(v.timestamp) AS date,
-
-        COUNT(DISTINCT v.visitId) AS allVisits,
+        v.date,
+        v.allVisits,
 
         ROUND(MIN(s.durationMs) / 60000, 2) AS minSession,
         ROUND(MAX(s.durationMs) / 60000, 2) AS maxSession,
         ROUND(AVG(s.durationMs) / 60000, 2) AS avgSession
 
-      FROM visits v
-      LEFT JOIN sessions s
-        ON s.userId = v.userId
-        AND DATE(s.timestamp) = DATE(v.timestamp)
+      FROM (
+        SELECT
+          DATE(timestamp) AS date,
+          COUNT(DISTINCT visitId) AS allVisits
+        FROM visits
+        GROUP BY DATE(timestamp)
+      ) v
 
-      GROUP BY date
-      ORDER BY date DESC
+      LEFT JOIN (
+        SELECT
+          DATE(timestamp) AS date,
+          durationMs
+        FROM sessions
+      ) s
+        ON s.date = v.date
+
+      GROUP BY v.date
+      ORDER BY v.date DESC
     `);
 
     res.json(rows);
