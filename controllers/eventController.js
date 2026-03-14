@@ -191,3 +191,25 @@ exports.getKeyboardShortcutsEvents = async (req, res) => {
     res.status(500).json({ message: "Internal server error" });
   }
 };
+
+// Get events number by user
+// [{userId, importCount, exportCount, operationCount, toolToggleCount}, ...]
+exports.getEventsByUser = async (req, res) => {
+  try {
+    const [rows] = await db.query(`
+      SELECT 
+        userId,
+        SUM(eventType = 'uploadImage') AS importCount,
+        SUM(eventType IN ('exportImage', 'buttonClicked') AND JSON_UNQUOTE(JSON_EXTRACT(data, '$.button')) = 'copyImageToClipboard') AS exportCount,
+        SUM(eventType = 'applyOperation') AS operationCount,
+        SUM(eventType = 'toggleTool') AS toolToggleCount
+      FROM events
+      GROUP BY userId
+      ORDER BY importCount DESC, exportCount DESC, operationCount DESC, toolToggleCount DESC
+    `);
+    res.json(rows);
+  } catch (err) {
+    console.error("Error fetching events by user:", err);
+    res.status(500).json({ message: "Internal server error" });
+  }
+};
