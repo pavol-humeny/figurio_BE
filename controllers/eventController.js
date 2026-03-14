@@ -193,7 +193,7 @@ exports.getKeyboardShortcutsEvents = async (req, res) => {
 };
 
 // Get events number by user
-// [{userId, importCount, exportCount, operationCount, toolToggleCount}, ...]
+// [{userId, importCount, exportCount, operationCount, toolToggleCount, keyboardShortcutsCount, allEventsCount}, ...]
 exports.getEventsByUser = async (req, res) => {
   try {
     const [rows] = await db.query(`
@@ -202,7 +202,9 @@ exports.getEventsByUser = async (req, res) => {
         SUM(eventType = 'uploadImage') AS importCount,
         SUM(eventType IN ('exportImage', 'buttonClicked') AND JSON_UNQUOTE(JSON_EXTRACT(data, '$.button')) = 'copyImageToClipboard') AS exportCount,
         SUM(eventType = 'applyOperation') AS operationCount,
-        SUM(eventType = 'toggleTool') AS toolToggleCount
+        SUM(eventType = 'toggleTool') AS toolToggleCount,
+        SUM(eventType = 'keyboardShortcuts') AS keyboardShortcutsCount,
+        COUNT(*) AS allEventsCount
       FROM events
       GROUP BY userId
       ORDER BY importCount DESC, exportCount DESC, operationCount DESC, toolToggleCount DESC
