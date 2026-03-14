@@ -9,5 +9,6 @@ router.get("/:userId/events", userController.getUserEvents);
 router.post("/:userId/events", userController.addUserEvent);
 router.post("/:userId/sessions", userController.addUserSession);
 router.get("/sessions", userController.getUserSessions);
+router.get("/sessionDurationByUser", userController.getSessionDurationByUser);
 
 module.exports = router;

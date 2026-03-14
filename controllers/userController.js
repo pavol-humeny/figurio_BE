@@ -184,3 +184,25 @@ exports.getUserSessions = async (req, res) => {
     res.status(500).send("Server error");
   }
 };
+
+// Get session duration by user
+// [{ userId, minSession, maxSession, avgSession, totalSessionsTime }, ...]
+exports.getSessionDurationByUser = async (req, res) => {
+  try {
+    const [rows] = await db.query(`
+      SELECT
+        userId,
+        ROUND(MIN(durationMs) / 60000, 2) AS minSession,
+        ROUND(MAX(durationMs) / 60000, 2) AS maxSession,
+        ROUND(AVG(durationMs) / 60000, 2) AS avgSession,
+        SUM(durationMs) / 60000 AS totalSessionsTime
+      FROM sessions
+      GROUP BY userId
+      ORDER BY avgSession DESC
+    `);
+    res.json(rows);
+  } catch (err) {
+    console.error(err);
+    res.status(500).send("Server error");
+  }
+};
