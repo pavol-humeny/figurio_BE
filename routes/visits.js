@@ -12,5 +12,6 @@ router.get(
   "/avgEventsPerVisitByDay",
   visitsController.getAvgEventsPerVisitByDay,
 );
+router.get("/visitsByUser", visitsController.getVisitsByUser);
 
 module.exports = router;

@@ -218,3 +218,23 @@ exports.getVisitsByDayFullRange = async (req, res) => {
     res.status(500).send("Server error");
   }
 };
+
+// Get visits grouped by user
+// [{ userId, visitCount }, ...]
+exports.getVisitsByUser = async (req, res) => {
+  try {
+    const [rows] = await db.query(`
+      SELECT 
+        userId,
+        COUNT(*) AS visitCount
+      FROM visits
+      GROUP BY userId
+      ORDER BY visitCount DESC
+    `);
+
+    res.json(rows);
+  } catch (err) {
+    console.error(err);
+    res.status(500).send("Server error");
+  }
+};
