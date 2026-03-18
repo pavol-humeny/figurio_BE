@@ -11,5 +11,6 @@ router.get("/exportImage", eventController.getExportImageEvents);
 router.get("/openModal", eventController.getOpenModalEvents);
 router.get("/keyboardShortcuts", eventController.getKeyboardShortcutsEvents);
 router.get("/eventsByUser", eventController.getEventsByUser);
+router.get("/appInstalledCount", eventController.getAppInstalledCount);
 
 module.exports = router;

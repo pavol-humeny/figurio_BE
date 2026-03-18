@@ -215,3 +215,20 @@ exports.getEventsByUser = async (req, res) => {
     res.status(500).json({ message: "Internal server error" });
   }
 };
+
+// Get app installed count
+// {appInstalledCount: number}
+exports.getAppInstalledCount = async (req, res) => {
+  try {
+    const [rows] = await db.query(`
+      SELECT 
+        COUNT(DISTINCT userId) AS appInstalledCount
+      FROM events
+      WHERE eventType = 'appInstalled'
+    `);
+    res.json(rows[0]);
+  } catch (err) {
+    console.error("Error fetching app installed count:", err);
+    res.status(500).json({ message: "Internal server error" });
+  }
+};
