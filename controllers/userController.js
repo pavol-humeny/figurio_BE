@@ -35,6 +35,7 @@ exports.getUserVisits = async (req, res) => {
 exports.addUserVisit = async (req, res) => {
   const userId = req.params.userId;
   const ipFromClient = req.body.ip; // FE send IP
+  const isPWA = req.body.isPWA; // FE send isPWA flag (optional)
 
   try {
     // Get IP from client or fallback to headers
@@ -72,11 +73,13 @@ exports.addUserVisit = async (req, res) => {
 
     // Add visit
     await db.query(
-      "INSERT INTO visits (userId, ip, userAgent, country, city) VALUES (?, ?, ?, ?, ?)",
-      [userId, ip, userAgent, country, city],
+      "INSERT INTO visits (userId, ip, userAgent, country, city, isPWA) VALUES (?, ?, ?, ?, ?, ?)",
+      [userId, ip, userAgent, country, city, isPWA],
     );
 
-    console.log(`[DEBUG] Visit saved for user ${userId}`);
+    console.log(
+      `[DEBUG] Visit saved for user ${userId} from IP ${ip} (${country}, ${city}) with UA: ${userAgent} and isPWA: ${isPWA}`,
+    );
     res.status(201).send("Visit saved");
   } catch (err) {
     console.error(err);
@@ -107,6 +110,9 @@ exports.addUserEvent = async (req, res) => {
       [userId, eventType, JSON.stringify(data)],
     );
     res.status(201).send("Event saved");
+    console.log(
+      `[DEBUG] Event saved for user ${userId}: ${eventType} with data: ${JSON.stringify(data)}`,
+    );
   } catch (err) {
     console.error(err);
     res.status(500).send("Server error");
