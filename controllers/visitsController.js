@@ -238,3 +238,19 @@ exports.getVisitsByUser = async (req, res) => {
     res.status(500).send("Server error");
   }
 };
+
+// Get number of PWA visits
+// { pwaVisits }
+exports.getNumberOfPWAVisits = async (req, res) => {
+  try {
+    const [rows] = await db.query(`
+      SELECT COUNT(*) AS pwaVisits
+      FROM visits
+      WHERE isPWA = TRUE
+    `);
+    res.json(rows[0]);
+  } catch (err) {
+    console.error(err);
+    res.status(500).send("Server error");
+  }
+};

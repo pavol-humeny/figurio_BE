@@ -13,5 +13,6 @@ router.get(
   visitsController.getAvgEventsPerVisitByDay,
 );
 router.get("/visitsByUser", visitsController.getVisitsByUser);
+router.get("/numberOfPWAVisits", visitsController.getNumberOfPWAVisits);
 
 module.exports = router;
