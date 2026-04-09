@@ -7,6 +7,7 @@ async function init() {
     await db.query(`DROP TABLE IF EXISTS visits`);
     await db.query(`DROP TABLE IF EXISTS sessions`);
     await db.query(`DROP TABLE IF EXISTS users`);
+    await db.query(`DROP TABLE IF EXISTS ratings`);
 
     // Users table
     await db.query(`
@@ -49,6 +50,19 @@ async function init() {
         userId VARCHAR(255) NOT NULL,
         eventType VARCHAR(50) NOT NULL,
         data JSON,
+        timestamp DATETIME DEFAULT CURRENT_TIMESTAMP,
+        FOREIGN KEY (userId) REFERENCES users(userId) ON DELETE CASCADE
+      )
+    `);
+
+    // Ratings table
+    await db.query(`
+      CREATE TABLE ratings (
+        ratingId INT AUTO_INCREMENT PRIMARY KEY,
+        userId VARCHAR(255) NOT NULL,
+        rating INT NOT NULL,
+        feedback TEXT,
+        numberOfExports INT DEFAULT 0,
         timestamp DATETIME DEFAULT CURRENT_TIMESTAMP,
         FOREIGN KEY (userId) REFERENCES users(userId) ON DELETE CASCADE
       )

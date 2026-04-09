@@ -75,3 +75,36 @@ exports.visitDuringMaintenance = async (req, res) => {
     res.status(500).send("Server error");
   }
 };
+
+exports.submitRating = async (req, res) => {
+  const userId = req.params.userId;
+  const { rating, feedback, numberOfExports } = req.body;
+
+  try {
+    /**
+     * Basic validation
+     */
+    if (!userId) {
+      return res.status(400).json({ error: "Missing userId" });
+    }
+
+    /**
+     * Insert rating into database
+     */
+    await db.query(
+      `
+      INSERT INTO ratings (userId, rating, feedback, numberOfExports)
+      VALUES (?, ?, ?, ?)
+      `,
+      [userId, rating, feedback || null, numberOfExports || 0],
+    );
+
+    // Send email notification
+    await mailService.sendRatingEmail({ userId, rating, comment: feedback });
+
+    return res.status(200).json({ success: true });
+  } catch (err) {
+    console.error("Error submitting rating:", err);
+    return res.status(500).json({ error: "Internal server error" });
+  }
+};

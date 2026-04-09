@@ -53,3 +53,25 @@ exports.sendVisitDuringMaintenanceEmail = async ({
   if (error) throw error;
   return data;
 };
+
+// Rating mail
+exports.sendRatingEmail = async ({ userId, rating, comment }) => {
+  const subject = `New Rating from User ${userId}`;
+  const messageBody = `
+    <h2>New User Rating</h2>
+    <p><strong>User ID:</strong> ${userId}</p>
+    <p><strong>Rating:</strong> ${rating} / 5</p>
+    <p><strong>Comment:</strong> ${comment || "No comment provided"}</p>
+  `;
+
+  // Send via Resend HTTP API
+  const { data, error } = await resend.emails.send({
+    from: `"Rating Bot" <${process.env.MAIL_FROM}>`,
+    to: process.env.MAIL_TO,
+    subject,
+    html: messageBody,
+  });
+
+  if (error) throw error;
+  return data;
+};

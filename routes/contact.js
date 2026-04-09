@@ -7,5 +7,6 @@ router.post(
   "/:userId/visitDuringMaintenance",
   contactController.visitDuringMaintenance,
 );
+router.post("/:userId/rating", contactController.submitRating);
 
 module.exports = router;
