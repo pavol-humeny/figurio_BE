@@ -1,5 +1,6 @@
 const mailService = require("../services/mailService");
 const geoip = require("geoip-lite");
+const db = require("../services/db");
 
 exports.sendContactForm = async (req, res) => {
   const { name, email, subject, message } = req.body;
@@ -81,13 +82,6 @@ exports.submitRating = async (req, res) => {
   const { rating, feedback, numberOfExports } = req.body;
 
   try {
-    /**
-     * Basic validation
-     */
-    if (!userId) {
-      return res.status(400).json({ error: "Missing userId" });
-    }
-
     /**
      * Insert rating into database
      */
