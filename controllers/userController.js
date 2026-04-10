@@ -228,6 +228,20 @@ exports.getSessionDurationByUser = async (req, res) => {
 exports.getUserVisits = async (req, res) => {
   const userId = req.params.userId;
 
+  /**
+   * Format date to YYYY-MM-DD
+   */
+  const formatDate = (date) => {
+    if (!date) return null;
+
+    const d = new Date(date);
+    const y = d.getFullYear();
+    const m = String(d.getMonth() + 1).padStart(2, "0");
+    const day = String(d.getDate()).padStart(2, "0");
+
+    return `${y}-${m}-${day}`;
+  };
+
   try {
     // 1. Basic stats
     const [[basic]] = await db.query(
@@ -254,7 +268,7 @@ exports.getUserVisits = async (req, res) => {
       [userId],
     );
 
-    // 3. Visits per day (for heatmap + streak)
+    // 3. Visits per day
     const [visitsPerDay] = await db.query(
       `
       SELECT DATE(timestamp) AS date, COUNT(*) AS count
@@ -291,11 +305,6 @@ exports.getUserVisits = async (req, res) => {
       }
     }
 
-    // 5. Format first visit
-    const firstVisitFormatted = basic.firstVisit
-      ? new Date(basic.firstVisit).toLocaleDateString("en-GB")
-      : null;
-
     res.json({
       totalVisits: basic.totalVisits,
       activeDays: basic.activeDays,
@@ -304,10 +313,10 @@ exports.getUserVisits = async (req, res) => {
       pwaVisits: pwaStats.pwaVisits || 0,
       browserVisits: pwaStats.browserVisits || 0,
 
-      firstVisit: firstVisitFormatted,
+      firstVisit: formatDate(basic.firstVisit),
 
       heatmap: visitsPerDay.map((d) => ({
-        date: d.date,
+        date: formatDate(d.date),
         count: d.count,
       })),
     });
