@@ -325,3 +325,51 @@ exports.getUserVisits = async (req, res) => {
     res.status(500).send("Server error");
   }
 };
+
+/**
+ * Get tool usage for radar chart
+ * Returns usage count per tool for given user
+ *  [
+      { "tool": "crop", "usage": 34 },
+      { "tool": "frame", "usage": 12 },
+      { "tool": "blur", "usage": 7 },
+      { "tool": "magnify", "usage": 19 }
+    ]
+ */
+exports.getUserToolUsage = async (req, res) => {
+  const userId = req.params.userId;
+
+  try {
+    const [rows] = await db.query(
+      `
+      SELECT
+        JSON_UNQUOTE(JSON_EXTRACT(data, '$.tool')) AS tool,
+        COUNT(*) AS usage
+      FROM events
+      WHERE userId = ?
+        AND eventType IN ('toggleTool', 'applyOperation')
+        AND JSON_EXTRACT(data, '$.tool') IS NOT NULL
+      GROUP BY tool
+      ORDER BY usage DESC
+      `,
+      [userId],
+    );
+
+    // Normalize to percentage (0–100)
+    const total = rows.reduce((sum, r) => sum + r.usage, 0);
+
+    const normalized = rows.map((r) => ({
+      tool: r.tool,
+      usage: r.usage,
+      percentage: total > 0 ? Math.round((r.usage / total) * 100) : 0,
+    }));
+
+    res.json({
+      totalInteractions: total,
+      tools: normalized,
+    });
+  } catch (err) {
+    console.error(err);
+    res.status(500).send("Server error");
+  }
+};

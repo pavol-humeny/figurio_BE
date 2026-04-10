@@ -11,5 +11,6 @@ router.post("/:userId/sessions", userController.addUserSession);
 router.get("/sessions", userController.getUserSessions);
 router.get("/sessionDurationByUser", userController.getSessionDurationByUser);
 router.get("/:userId/userVisits", userController.getUserVisits);
+router.get("/:userId/toolUsage", userController.getUserToolUsage);
 
 module.exports = router;
