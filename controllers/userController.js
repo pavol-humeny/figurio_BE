@@ -302,45 +302,81 @@ exports.getUserVisits = async (req, res) => {
 /**
  * Get tool usage for radar chart
  * Returns usage count per tool for given user
- *  [
-      { "tool": "crop", "usageCount": 34 },
-      { "tool": "frame", "usageCount": 12 },
-      { "tool": "blur", "usageCount": 7 },
-      { "tool": "magnify", "usageCount": 19 }
-    ]
+ * Example:
+ * {
+ *   totalInteractions: 72,
+ *   tools: [
+ *     { tool: "crop", usage: 34, percentage: 47, rank: 1 },
+ *     { tool: "frame", usage: 12, percentage: 17, rank: 2 },
+ *     { tool: "magnify", usage: 19, percentage: 26, rank: 3 },
+ *     { tool: "blur", usage: 7, percentage: 10, rank: 4 }
+ *   ]
+ * }
  */
 exports.getUserToolUsage = async (req, res) => {
   const userId = req.params.userId;
 
+  // Excluded user ids
+  const excludedUserIds = ["5ed20eea-489a-4edb-81e1-803e3d2e1411"];
+
   try {
-    const [rows] = await db.query(
+    /**
+     * Condition to exclude specific users from ranking
+     */
+    const placeholders = excludedUserIds.map(() => "?").join(", ");
+    const excludeCondition =
+      excludedUserIds.length > 0 ? `AND userId NOT IN (${placeholders})` : "";
+
+    /**
+     * 1. Rank for all users
+     */
+    const [rankRows] = await db.query(
       `
       SELECT
-        JSON_UNQUOTE(JSON_EXTRACT(data, '$.tool')) AS tool,
-        COUNT(*) AS usageCount
-      FROM events
-      WHERE userId = ?
-        AND eventType IN ('toggleTool', 'applyOperation')
-        AND JSON_EXTRACT(data, '$.tool') IS NOT NULL
-      GROUP BY tool
-      ORDER BY usageCount DESC
+        tool,
+        userId,
+        usageCount,
+        RANK() OVER (PARTITION BY tool ORDER BY usageCount DESC) AS rank
+      FROM (
+        SELECT
+          JSON_UNQUOTE(JSON_EXTRACT(data, '$.tool')) AS tool,
+          userId,
+          COUNT(*) AS usageCount
+        FROM events
+        WHERE eventType IN ('toggleTool', 'applyOperation')
+          AND JSON_EXTRACT(data, '$.tool') IS NOT NULL
+          ${excludeCondition}
+        GROUP BY tool, userId
+      ) t
       `,
-      [userId],
+      excludedUserIds,
     );
 
-    // Total interactions
-    const total = rows.reduce((sum, r) => sum + r.usageCount, 0);
+    /**
+     * 2. Filter just current user
+     */
+    const userToolStats = rankRows.filter((r) => r.userId === userId);
 
-    // Normalize to percentage (0–100)
-    const normalized = rows.map((r) => ({
-      tool: r.tool,
-      usage: r.usageCount,
-      percentage: total > 0 ? Math.round((r.usageCount / total) * 100) : 0,
-    }));
+    /**
+     * 3. Total interactions
+     */
+    const total = userToolStats.reduce((sum, r) => sum + r.usageCount, 0);
+
+    /**
+     * 4. Normalization and rank
+     */
+    const tools = userToolStats
+      .sort((a, b) => b.usageCount - a.usageCount)
+      .map((r) => ({
+        tool: r.tool,
+        usage: r.usageCount,
+        percentage: total > 0 ? Math.round((r.usageCount / total) * 100) : 0,
+        rank: r.rank,
+      }));
 
     res.json({
       totalInteractions: total,
-      tools: normalized,
+      tools,
     });
   } catch (err) {
     console.error(err);
