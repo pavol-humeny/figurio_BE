@@ -336,7 +336,7 @@ exports.getUserToolUsage = async (req, res) => {
         tool,
         userId,
         usageCount,
-        RANK() OVER (PARTITION BY tool ORDER BY usageCount DESC) AS rank
+        RANK() OVER (PARTITION BY tool ORDER BY usageCount DESC) AS userRank
       FROM (
         SELECT
           JSON_UNQUOTE(JSON_EXTRACT(data, '$.tool')) AS tool,
@@ -371,7 +371,7 @@ exports.getUserToolUsage = async (req, res) => {
         tool: r.tool,
         usage: r.usageCount,
         percentage: total > 0 ? Math.round((r.usageCount / total) * 100) : 0,
-        rank: r.rank,
+        rank: r.userRank,
       }));
 
     res.json({
