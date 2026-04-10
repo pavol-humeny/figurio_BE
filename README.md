@@ -301,6 +301,19 @@ Frontend (produkcia): https://pavol-humeny.github.io/figurio/
 - **Výstup:** text `Maintenance visit email sent successfully.`
 - **Popis:** Odošle notifikačný e-mail o návšteve počas maintenance módu (s metadátami návštevy).
 
+### `POST /api/contact/:userId/rating`
+- **Typ:** POST
+- **Vstup:**
+  ```json
+  {
+    "rating": "number",
+    "feedback": "string",
+    "numberOfExports": "number"
+  }
+  ```
+- **Výstup:** success: true
+- **Popis:** Uloží rating do databázy a pošle ho na mail.
+
 ---
 
 # CORS 

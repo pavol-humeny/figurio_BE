@@ -212,3 +212,107 @@ exports.getSessionDurationByUser = async (req, res) => {
     res.status(500).send("Server error");
   }
 };
+
+// {
+//   "totalVisits": 123,
+//   "activeDays": 25,
+//   "longestStreak": 7,
+//   "pwaVisits": 80,
+//   "browserVisits": 43,
+//   "firstVisit": "12/02/2026",
+//   "heatmap": [
+//     { "date": "2026-02-10", "count": 3 },
+//     { "date": "2026-02-11", "count": 1 }
+//   ]
+// }
+exports.getUserVisits = async (req, res) => {
+  const userId = req.params.userId;
+
+  try {
+    // 1. Basic stats
+    const [[basic]] = await db.query(
+      `
+      SELECT
+        COUNT(*) AS totalVisits,
+        COUNT(DISTINCT DATE(timestamp)) AS activeDays,
+        MIN(timestamp) AS firstVisit
+      FROM visits
+      WHERE userId = ?
+      `,
+      [userId],
+    );
+
+    // 2. PWA vs browser
+    const [[pwaStats]] = await db.query(
+      `
+      SELECT
+        SUM(CASE WHEN isPWA = 1 THEN 1 ELSE 0 END) AS pwaVisits,
+        SUM(CASE WHEN isPWA = 0 OR isPWA IS NULL THEN 1 ELSE 0 END) AS browserVisits
+      FROM visits
+      WHERE userId = ?
+      `,
+      [userId],
+    );
+
+    // 3. Visits per day (for heatmap + streak)
+    const [visitsPerDay] = await db.query(
+      `
+      SELECT DATE(timestamp) AS date, COUNT(*) AS count
+      FROM visits
+      WHERE userId = ?
+      GROUP BY DATE(timestamp)
+      ORDER BY date ASC
+      `,
+      [userId],
+    );
+
+    // 4. Longest streak
+    let longestStreak = 0;
+    let currentStreak = 0;
+
+    for (let i = 0; i < visitsPerDay.length; i++) {
+      if (i === 0) {
+        currentStreak = 1;
+      } else {
+        const prev = new Date(visitsPerDay[i - 1].date);
+        const curr = new Date(visitsPerDay[i].date);
+
+        const diffDays = (curr - prev) / (1000 * 60 * 60 * 24);
+
+        if (diffDays === 1) {
+          currentStreak++;
+        } else {
+          currentStreak = 1;
+        }
+      }
+
+      if (currentStreak > longestStreak) {
+        longestStreak = currentStreak;
+      }
+    }
+
+    // 5. Format first visit
+    const firstVisitFormatted = basic.firstVisit
+      ? new Date(basic.firstVisit).toLocaleDateString("en-GB")
+      : null;
+
+    res.json({
+      totalVisits: basic.totalVisits,
+      activeDays: basic.activeDays,
+      longestStreak,
+
+      pwaVisits: pwaStats.pwaVisits || 0,
+      browserVisits: pwaStats.browserVisits || 0,
+
+      firstVisit: firstVisitFormatted,
+
+      heatmap: visitsPerDay.map((d) => ({
+        date: d.date,
+        count: d.count,
+      })),
+    });
+  } catch (err) {
+    console.error(err);
+    res.status(500).send("Server error");
+  }
+};
