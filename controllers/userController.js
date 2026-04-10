@@ -306,76 +306,45 @@ exports.getUserVisits = async (req, res) => {
  * {
  *   totalInteractions: 72,
  *   tools: [
- *     { tool: "crop", usage: 34, percentage: 47, rank: 1 },
- *     { tool: "frame", usage: 12, percentage: 17, rank: 2 },
- *     { tool: "magnify", usage: 19, percentage: 26, rank: 3 },
- *     { tool: "blur", usage: 7, percentage: 10, rank: 4 }
+ *     { tool: "crop", usage: 34, percentage: 47 },
+ *     { tool: "frame", usage: 12, percentage: 17 },
+ *     { tool: "magnify", usage: 19, percentage: 26 },
+ *     { tool: "blur", usage: 7, percentage: 10 }
  *   ]
  * }
  */
 exports.getUserToolUsage = async (req, res) => {
   const userId = req.params.userId;
 
-  // Excluded user ids
-  const excludedUserIds = ["5ed20eea-489a-4edb-81e1-803e3d2e1411"];
-
   try {
-    const placeholders = excludedUserIds.map(() => "?").join(", ");
-    const excludeCondition =
-      excludedUserIds.length > 0 ? `AND userId NOT IN (${placeholders})` : "";
-
     const [rows] = await db.query(
       `
       SELECT
-        tool,
-        userId,
+        JSON_UNQUOTE(JSON_EXTRACT(data, '$.tool')) AS tool,
         COUNT(*) AS usageCount
       FROM events
-      WHERE eventType IN ('toggleTool', 'applyOperation')
+      WHERE userId = ?
+        AND eventType IN ('toggleTool', 'applyOperation')
         AND JSON_EXTRACT(data, '$.tool') IS NOT NULL
-        ${excludeCondition}
-      GROUP BY tool, userId
+      GROUP BY tool
+      ORDER BY usageCount DESC
       `,
-      excludedUserIds,
+      [userId],
     );
 
-    const toolsMap = {};
+    // Total interactions
+    const total = rows.reduce((sum, r) => sum + r.usageCount, 0);
 
-    rows.forEach((r) => {
-      if (!toolsMap[r.tool]) toolsMap[r.tool] = [];
-      toolsMap[r.tool].push(r);
-    });
-
-    const userToolStats = [];
-
-    Object.keys(toolsMap).forEach((tool) => {
-      const sorted = toolsMap[tool].sort((a, b) => b.usageCount - a.usageCount);
-
-      sorted.forEach((r, index) => {
-        if (r.userId === userId) {
-          userToolStats.push({
-            tool,
-            usageCount: r.usageCount,
-            rank: index + 1,
-          });
-        }
-      });
-    });
-
-    const total = userToolStats.reduce((sum, r) => sum + r.usageCount, 0);
-
-    const tools = userToolStats
-      .sort((a, b) => b.usageCount - a.usageCount)
-      .map((r) => ({
-        tool: r.tool,
-        usage: r.usageCount,
-        percentage: total > 0 ? Math.round((r.usageCount / total) * 100) : 0,
-        rank: r.rank,
-      }));
+    // Normalize to percentage (0–100)
+    const normalized = rows.map((r) => ({
+      tool: r.tool,
+      usage: r.usageCount,
+      percentage: total > 0 ? Math.round((r.usageCount / total) * 100) : 0,
+    }));
 
     res.json({
       totalInteractions: total,
-      tools,
+      tools: normalized,
     });
   } catch (err) {
     console.error(err);
