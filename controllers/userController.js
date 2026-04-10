@@ -217,29 +217,23 @@ exports.getSessionDurationByUser = async (req, res) => {
 //   "totalVisits": 123,
 //   "activeDays": 25,
 //   "longestStreak": 7,
-//   "pwaVisits": 80,
-//   "browserVisits": 43,
 //   "firstVisit": "12/02/2026",
-//   "heatmap": [
-//     { "date": "2026-02-10", "count": 3 },
-//     { "date": "2026-02-11", "count": 1 }
-//   ]
 // }
 exports.getUserVisits = async (req, res) => {
   const userId = req.params.userId;
 
   /**
-   * Format date to YYYY-MM-DD
+   * Format date to DD.MM.YYYY
    */
   const formatDate = (date) => {
     if (!date) return null;
 
     const d = new Date(date);
-    const y = d.getFullYear();
-    const m = String(d.getMonth() + 1).padStart(2, "0");
     const day = String(d.getDate()).padStart(2, "0");
+    const month = String(d.getMonth() + 1).padStart(2, "0");
+    const year = d.getFullYear();
 
-    return `${y}-${m}-${day}`;
+    return `${day}.${month}.${year}`;
   };
 
   try {
@@ -256,22 +250,10 @@ exports.getUserVisits = async (req, res) => {
       [userId],
     );
 
-    // 2. PWA vs browser
-    const [[pwaStats]] = await db.query(
-      `
-      SELECT
-        SUM(CASE WHEN isPWA = 1 THEN 1 ELSE 0 END) AS pwaVisits,
-        SUM(CASE WHEN isPWA = 0 OR isPWA IS NULL THEN 1 ELSE 0 END) AS browserVisits
-      FROM visits
-      WHERE userId = ?
-      `,
-      [userId],
-    );
-
-    // 3. Visits per day
+    // 2. Visits per day (needed for streak)
     const [visitsPerDay] = await db.query(
       `
-      SELECT DATE(timestamp) AS date, COUNT(*) AS count
+      SELECT DATE(timestamp) AS date
       FROM visits
       WHERE userId = ?
       GROUP BY DATE(timestamp)
@@ -280,7 +262,7 @@ exports.getUserVisits = async (req, res) => {
       [userId],
     );
 
-    // 4. Longest streak
+    // 3. Longest streak
     let longestStreak = 0;
     let currentStreak = 0;
 
@@ -309,16 +291,7 @@ exports.getUserVisits = async (req, res) => {
       totalVisits: basic.totalVisits,
       activeDays: basic.activeDays,
       longestStreak,
-
-      pwaVisits: pwaStats.pwaVisits || 0,
-      browserVisits: pwaStats.browserVisits || 0,
-
       firstVisit: formatDate(basic.firstVisit),
-
-      heatmap: visitsPerDay.map((d) => ({
-        date: formatDate(d.date),
-        count: d.count,
-      })),
     });
   } catch (err) {
     console.error(err);
