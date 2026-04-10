@@ -320,58 +320,57 @@ exports.getUserToolUsage = async (req, res) => {
   const excludedUserIds = ["5ed20eea-489a-4edb-81e1-803e3d2e1411"];
 
   try {
-    /**
-     * Condition to exclude specific users from ranking
-     */
     const placeholders = excludedUserIds.map(() => "?").join(", ");
     const excludeCondition =
       excludedUserIds.length > 0 ? `AND userId NOT IN (${placeholders})` : "";
 
-    /**
-     * 1. Rank for all users
-     */
-    const [rankRows] = await db.query(
+    const [rows] = await db.query(
       `
       SELECT
         tool,
         userId,
-        usageCount,
-        RANK() OVER (PARTITION BY tool ORDER BY usageCount DESC) AS userRank
-      FROM (
-        SELECT
-          JSON_UNQUOTE(JSON_EXTRACT(data, '$.tool')) AS tool,
-          userId,
-          COUNT(*) AS usageCount
-        FROM events
-        WHERE eventType IN ('toggleTool', 'applyOperation')
-          AND JSON_EXTRACT(data, '$.tool') IS NOT NULL
-          ${excludeCondition}
-        GROUP BY tool, userId
-      ) t
+        COUNT(*) AS usageCount
+      FROM events
+      WHERE eventType IN ('toggleTool', 'applyOperation')
+        AND JSON_EXTRACT(data, '$.tool') IS NOT NULL
+        ${excludeCondition}
+      GROUP BY tool, userId
       `,
       excludedUserIds,
     );
 
-    /**
-     * 2. Filter just current user
-     */
-    const userToolStats = rankRows.filter((r) => r.userId === userId);
+    const toolsMap = {};
 
-    /**
-     * 3. Total interactions
-     */
+    rows.forEach((r) => {
+      if (!toolsMap[r.tool]) toolsMap[r.tool] = [];
+      toolsMap[r.tool].push(r);
+    });
+
+    const userToolStats = [];
+
+    Object.keys(toolsMap).forEach((tool) => {
+      const sorted = toolsMap[tool].sort((a, b) => b.usageCount - a.usageCount);
+
+      sorted.forEach((r, index) => {
+        if (r.userId === userId) {
+          userToolStats.push({
+            tool,
+            usageCount: r.usageCount,
+            rank: index + 1,
+          });
+        }
+      });
+    });
+
     const total = userToolStats.reduce((sum, r) => sum + r.usageCount, 0);
 
-    /**
-     * 4. Normalization and rank
-     */
     const tools = userToolStats
       .sort((a, b) => b.usageCount - a.usageCount)
       .map((r) => ({
         tool: r.tool,
         usage: r.usageCount,
         percentage: total > 0 ? Math.round((r.usageCount / total) * 100) : 0,
-        rank: r.userRank,
+        rank: r.rank,
       }));
 
     res.json({
