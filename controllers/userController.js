@@ -614,3 +614,112 @@ exports.getUserEventsStats = async (req, res) => {
     res.status(500).send("Server error");
   }
 };
+
+/**
+ * Get session statistics for user
+ * Example response:
+ *  {
+      "sessionDuration": {
+        "min": 12,
+        "max": 320,
+        "avg": 85,
+        "total": 5400
+      },
+      "eventsPerSession": {
+        "import": 1.2,
+        "export": 0.8,
+        "operation": 5.6
+      },
+      "eventsPerMinute": 3.4
+    }
+ */
+exports.getUserSessionStats = async (req, res) => {
+  const userId = req.params.userId;
+
+  try {
+    // 1. SESSION DURATIONS (from sessions table)
+    const [sessions] = await db.query(
+      `
+      SELECT durationMs
+      FROM sessions
+      WHERE userId = ?
+      `,
+      [userId],
+    );
+
+    const durationsSec = sessions.map((s) => Math.floor(s.durationMs / 1000));
+
+    const totalDuration = durationsSec.reduce((sum, d) => sum + d, 0);
+    const minDuration = durationsSec.length ? Math.min(...durationsSec) : 0;
+    const maxDuration = durationsSec.length ? Math.max(...durationsSec) : 0;
+    const avgDuration = durationsSec.length
+      ? Math.round(totalDuration / durationsSec.length)
+      : 0;
+
+    // 2. EVENTS PER SESSION (via time window join)
+    const [eventsPerSession] = await db.query(
+      `
+      SELECT
+        s.sessionId,
+        SUM(e.eventType = 'uploadImage') AS importCount,
+        SUM(e.eventType = 'exportImage') AS exportCount,
+        SUM(e.eventType NOT IN ('uploadImage', 'exportImage')) AS operationCount,
+        COUNT(e.eventId) AS totalEvents
+      FROM sessions s
+      LEFT JOIN events e
+        ON e.userId = s.userId
+        AND e.timestamp BETWEEN s.timestamp AND s.lastHeartbeat
+      WHERE s.userId = ?
+      GROUP BY s.sessionId
+      `,
+      [userId],
+    );
+
+    const sessionCount = eventsPerSession.length || 1;
+
+    const totalImport = eventsPerSession.reduce(
+      (sum, s) => sum + (s.importCount || 0),
+      0,
+    );
+    const totalExport = eventsPerSession.reduce(
+      (sum, s) => sum + (s.exportCount || 0),
+      0,
+    );
+    const totalOperation = eventsPerSession.reduce(
+      (sum, s) => sum + (s.operationCount || 0),
+      0,
+    );
+    const totalEvents = eventsPerSession.reduce(
+      (sum, s) => sum + (s.totalEvents || 0),
+      0,
+    );
+
+    const avgImport = totalImport / sessionCount;
+    const avgExport = totalExport / sessionCount;
+    const avgOperation = totalOperation / sessionCount;
+
+    // 3. EVENTS PER MINUTE
+    const totalMinutes = totalDuration / 60;
+
+    const eventsPerMinute = totalMinutes > 0 ? totalEvents / totalMinutes : 0;
+
+    // RESPONSE
+    res.json({
+      sessionDuration: {
+        min: minDuration,
+        max: maxDuration,
+        avg: avgDuration,
+        total: totalDuration,
+      },
+      eventsPerSession: {
+        import: Number(avgImport.toFixed(2)),
+        export: Number(avgExport.toFixed(2)),
+        operation: Number(avgOperation.toFixed(2)),
+      },
+      eventsPerMinute: Number(eventsPerMinute.toFixed(2)),
+    });
+  } catch (err) {
+    console.error(err);
+    res.status(500).send("Server error");
+  }
+};
