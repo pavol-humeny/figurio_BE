@@ -375,11 +375,7 @@ exports.getUserToolUsage = async (req, res) => {
         ],
         "smallest": { "width": 300, "height": 200 },
         "largest": { "width": 1920, "height": 1080 }
-      },
-      "modals": [
-        { "modal": "export", "count": 12 },
-        { "modal": "settings", "count": 5 }
-      ]
+      }
     }
  */
 exports.getUserEventsStats = async (req, res) => {
@@ -388,9 +384,10 @@ exports.getUserEventsStats = async (req, res) => {
   try {
     // 1. TOTAL EVENTS + RANK
     const [[userTotal]] = await db.query(
-      `SELECT COUNT(*) AS totalEvents
-       FROM events
-       WHERE userId = ?`,
+      `
+      SELECT COUNT(*) AS totalEvents
+      FROM events
+      WHERE userId = ?`,
       [userId],
     );
 
@@ -469,7 +466,7 @@ exports.getUserEventsStats = async (req, res) => {
       [userId, userId],
     );
 
-    // Global size stats len pre exportImage (clipboard nemá rozmery)
+    // Global size stats only for exportImage (copyToClipboard doesn't have size)
     const [[exportGlobal]] = await db.query(
       `
       SELECT
@@ -485,21 +482,6 @@ exports.getUserEventsStats = async (req, res) => {
     );
 
     const exportTotal = exportsData.reduce((sum, r) => sum + r.count, 0);
-
-    // 4. MODALS
-    const [modals] = await db.query(
-      `
-      SELECT
-        JSON_UNQUOTE(JSON_EXTRACT(data, '$.modal')) AS modal,
-        COUNT(*) AS count
-      FROM events
-      WHERE userId = ?
-        AND eventType = 'openModal'
-        AND JSON_EXTRACT(data, '$.modal') IS NOT NULL
-      GROUP BY JSON_UNQUOTE(JSON_EXTRACT(data, '$.modal'))
-      `,
-      [userId],
-    );
 
     // RESPONSE
     res.json({
@@ -537,11 +519,6 @@ exports.getUserEventsStats = async (req, res) => {
             ? { width: exportGlobal.maxW, height: exportGlobal.maxH }
             : null,
       },
-
-      modals: modals.map((m) => ({
-        modal: m.modal,
-        count: m.count,
-      })),
     });
   } catch (err) {
     console.error(err);
