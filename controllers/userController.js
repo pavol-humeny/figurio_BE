@@ -756,7 +756,11 @@ exports.getUserSessionStats = async (req, res) => {
  */
 exports.getUserComparison = async (req, res) => {
   const userId = req.params.userId;
-  const excludedUserIds = req.body.excludedUserIds || [];
+
+  /**
+   * Hardcoded excluded users
+   */
+  const excludedUserIds = ["00000000-0000-0000-0000-000000000000"];
 
   try {
     // Build exclusion SQL
@@ -768,7 +772,7 @@ exports.getUserComparison = async (req, res) => {
     const params = [...excludedUserIds];
 
     /**
-     * Aggregate metrics per user (Safe – no JOIN duplication)
+     * Aggregate metrics per user 
      */
     const [rows] = await db.query(
       `

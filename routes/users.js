@@ -14,6 +14,6 @@ router.get("/:userId/userVisits", userController.getUserVisits);
 router.get("/:userId/toolUsage", userController.getUserToolUsage);
 router.get("/:userId/eventsStats", userController.getUserEventsStats);
 router.get("/:userId/sessionStats", userController.getUserSessionStats);
-router.post("/:userId/comparison", userController.getUserComparison);
+router.get("/:userId/comparison", userController.getUserComparison);
 
 module.exports = router;
