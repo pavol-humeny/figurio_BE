@@ -760,7 +760,7 @@ exports.getUserComparison = async (req, res) => {
   /**
    * Hardcoded excluded users
    */
-  const excludedUserIds = ["00000000-0000-0000-0000-000000000000"];
+  const excludedUserIds = ["2bfee4b4-44b3-451f-9f34-92934025b66d"];
 
   try {
     // Build exclusion SQL
