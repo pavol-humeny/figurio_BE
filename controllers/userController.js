@@ -772,7 +772,7 @@ exports.getUserComparison = async (req, res) => {
     const params = [...excludedUserIds];
 
     /**
-     * Aggregate metrics per user 
+     * Aggregate metrics per user
      */
     const [rows] = await db.query(
       `
@@ -807,7 +807,7 @@ exports.getUserComparison = async (req, res) => {
         (SELECT COUNT(*) FROM sessions s WHERE s.userId = u.userId) AS sessionCount,
 
         -- Total session time (minutes)
-        (SELECT SUM(durationMs) FROM sessions s WHERE s.userId = u.userId) / 60000 AS sessionTimeTotal,
+        COALESCE((SELECT SUM(durationMs) FROM sessions s WHERE s.userId = u.userId), 0) / 60000 AS sessionTimeTotal,
 
         -- Operation per session
         (
@@ -831,7 +831,7 @@ exports.getUserComparison = async (req, res) => {
             THEN
               (SELECT COUNT(*) FROM events e WHERE e.userId = u.userId)
               /
-              ((SELECT SUM(durationMs) FROM sessions s WHERE s.userId = u.userId) / 60000)
+              (COALESCE((SELECT SUM(durationMs) FROM sessions s WHERE s.userId = u.userId), 0) / 60000)
             ELSE 0
           END
         ) AS eventsPerMinute
@@ -842,21 +842,31 @@ exports.getUserComparison = async (req, res) => {
       params,
     );
 
+    // Converts anything to safe number
+    const toNumber = (val) => {
+      const num = Number(val);
+      return isNaN(num) ? 0 : num;
+    };
+
     /**
      * Ranking helper
      */
     const buildMetric = (key) => {
-      const sorted = [...rows].sort((a, b) => (b[key] || 0) - (a[key] || 0));
+      const sorted = [...rows].sort(
+        (a, b) => toNumber(b[key]) - toNumber(a[key]),
+      );
 
-      const best = sorted[0]?.[key] || 0;
+      const best = toNumber(sorted[0]?.[key]);
 
       const rankIndex = sorted.findIndex((u) => u.userId === userId);
       const rank = rankIndex !== -1 ? rankIndex + 1 : null;
 
       const userRow = rows.find((u) => u.userId === userId);
 
+      const value = toNumber(userRow?.[key]);
+
       return {
-        value: Number((userRow?.[key] || 0).toFixed(2)),
+        value: Number(value.toFixed(2)),
         best: Number(best.toFixed(2)),
         rank,
       };
