@@ -838,18 +838,21 @@ exports.getUserComparison = async (req, res) => {
         ) AS eventsPerMinute,
 
         -- Export success rate (export / import)
-        (
-          CASE 
-            WHEN (SELECT COUNT(*) FROM events e 
-                  WHERE e.userId = u.userId AND e.eventType = 'uploadImage') > 0
-            THEN
-              (SELECT COUNT(*) FROM events e 
-                WHERE e.userId = u.userId AND e.eventType = 'exportImage')
-              /
-              (SELECT COUNT(*) FROM events e 
-                WHERE e.userId = u.userId AND e.eventType = 'uploadImage')
-            ELSE 0
-          END
+        ROUND(
+          (
+            CASE 
+              WHEN (SELECT COUNT(*) FROM events e 
+                    WHERE e.userId = u.userId AND e.eventType = 'uploadImage') > 0
+              THEN
+                (SELECT COUNT(*) FROM events e 
+                  WHERE e.userId = u.userId AND e.eventType = 'exportImage') * 100.0
+                /
+                (SELECT COUNT(*) FROM events e 
+                  WHERE e.userId = u.userId AND e.eventType = 'uploadImage')
+              ELSE 0
+            END
+          ),
+          2
         ) AS exportRate
 
       FROM users u
