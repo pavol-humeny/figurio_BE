@@ -746,6 +746,7 @@ exports.getUserSessionStats = async (req, res) => {
  *     "exportCount": { "value": 39, "best": 275, "rank": 6 },
  *     "sessionTimeTotal": { "value": 124.75, "best": 980.33, "rank": 8 },
  *     "eventsPerMinute": { "value": 2.85, "best": 6.21, "rank": 9 }
+ *     "exportRate": { "value": 0.81, "best": 0.95, "rank": 5 }
  *   }
  * }
  *
@@ -834,7 +835,7 @@ exports.getUserComparison = async (req, res) => {
               (COALESCE((SELECT SUM(durationMs) FROM sessions s WHERE s.userId = u.userId), 0) / 60000)
             ELSE 0
           END
-        ) AS eventsPerMinute
+        ) AS eventsPerMinute,
 
         -- Export success rate (export / import)
         (
