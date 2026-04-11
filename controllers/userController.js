@@ -788,7 +788,7 @@ exports.getUserComparison = async (req, res) => {
         -- Operations
         (SELECT COUNT(*) FROM events e 
           WHERE e.userId = u.userId
-          AND e.eventType NOT IN ('uploadImage','exportImage','toggleTool','keyboardShortcuts')
+          AND e.eventType = 'applyOperation'
         ) AS operationCount,
 
         -- Import
