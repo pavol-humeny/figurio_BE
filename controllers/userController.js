@@ -637,7 +637,7 @@ exports.getUserSessionStats = async (req, res) => {
   const userId = req.params.userId;
 
   try {
-    // 1. SESSION DURATIONS (from sessions table)
+    // 1. SESSIONS
     const [sessions] = await db.query(
       `
       SELECT durationMs
@@ -646,6 +646,8 @@ exports.getUserSessionStats = async (req, res) => {
       `,
       [userId],
     );
+
+    const sessionCount = sessions.length || 1;
 
     const durationsSec = sessions.map((s) => Math.floor(s.durationMs / 1000));
 
@@ -656,44 +658,26 @@ exports.getUserSessionStats = async (req, res) => {
       ? Math.round(totalDuration / durationsSec.length)
       : 0;
 
-    // 2. EVENTS PER SESSION (via time window join)
-    const [eventsPerSession] = await db.query(
+    // 2. EVENTS (GLOBAL COUNTS)
+    const [[events]] = await db.query(
       `
       SELECT
-        s.sessionId,
-        SUM(e.eventType = 'uploadImage') AS importCount,
-        SUM(e.eventType = 'exportImage') AS exportCount,
-        SUM(e.eventType NOT IN ('uploadImage', 'exportImage')) AS operationCount,
-        COUNT(e.eventId) AS totalEvents
-      FROM sessions s
-      LEFT JOIN events e
-        ON e.userId = s.userId
-        AND e.timestamp BETWEEN s.timestamp AND s.lastHeartbeat
-      WHERE s.userId = ?
-      GROUP BY s.sessionId
+        SUM(eventType = 'uploadImage') AS importCount,
+        SUM(eventType = 'exportImage') AS exportCount,
+        SUM(eventType NOT IN ('uploadImage', 'exportImage')) AS operationCount,
+        COUNT(*) AS totalEvents
+      FROM events
+      WHERE userId = ?
       `,
       [userId],
     );
 
-    const sessionCount = eventsPerSession.length || 1;
+    const totalImport = events.importCount || 0;
+    const totalExport = events.exportCount || 0;
+    const totalOperation = events.operationCount || 0;
+    const totalEvents = events.totalEvents || 0;
 
-    const totalImport = eventsPerSession.reduce(
-      (sum, s) => sum + (s.importCount || 0),
-      0,
-    );
-    const totalExport = eventsPerSession.reduce(
-      (sum, s) => sum + (s.exportCount || 0),
-      0,
-    );
-    const totalOperation = eventsPerSession.reduce(
-      (sum, s) => sum + (s.operationCount || 0),
-      0,
-    );
-    const totalEvents = eventsPerSession.reduce(
-      (sum, s) => sum + (s.totalEvents || 0),
-      0,
-    );
-
+    // PER SESSION (simple division)
     const avgImport = totalImport / sessionCount;
     const avgExport = totalExport / sessionCount;
     const avgOperation = totalOperation / sessionCount;
