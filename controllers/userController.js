@@ -656,13 +656,14 @@ exports.getUserSessionStats = async (req, res) => {
 
     const sessionCount = sessions.length;
 
-    const durationsSec = sessions.map((s) => Math.floor(s.durationMs / 1000));
+    // Convert duration to minutes
+    const durationsMin = sessions.map((s) => s.durationMs / 1000 / 60);
 
-    const totalDuration = durationsSec.reduce((sum, d) => sum + d, 0);
-    const minDuration = durationsSec.length ? Math.min(...durationsSec) : 0;
-    const maxDuration = durationsSec.length ? Math.max(...durationsSec) : 0;
-    const avgDuration = durationsSec.length
-      ? Math.round(totalDuration / durationsSec.length)
+    const totalDuration = durationsMin.reduce((sum, d) => sum + d, 0);
+    const minDuration = durationsMin.length ? Math.min(...durationsMin) : 0;
+    const maxDuration = durationsMin.length ? Math.max(...durationsMin) : 0;
+    const avgDuration = durationsMin.length
+      ? totalDuration / durationsMin.length
       : 0;
 
     // 2. EVENTS (GLOBAL)
@@ -697,7 +698,7 @@ exports.getUserSessionStats = async (req, res) => {
     const operationPerSession = safeDivide(totalOperation);
 
     // 4. EVENTS PER MINUTE
-    const totalMinutes = totalDuration / 60;
+    const totalMinutes = totalDuration;
 
     const eventsPerMinute = totalMinutes > 0 ? totalEvents / totalMinutes : 0;
 
@@ -706,10 +707,10 @@ exports.getUserSessionStats = async (req, res) => {
       sessionCount,
 
       sessionDuration: {
-        min: minDuration,
-        max: maxDuration,
-        avg: avgDuration,
-        total: totalDuration,
+        min: Number(minDuration.toFixed(2)),
+        max: Number(maxDuration.toFixed(2)),
+        avg: Number(avgDuration.toFixed(2)),
+        total: Number(totalDuration.toFixed(2)),
       },
 
       totalEvents,
@@ -724,6 +725,154 @@ exports.getUserSessionStats = async (req, res) => {
       },
 
       keyboardShortcuts: totalKeyboard,
+    });
+  } catch (err) {
+    console.error(err);
+    res.status(500).send("Server error");
+  }
+};
+
+/**
+ * Compare user stats with others (ranking)
+ *
+ * Example response:
+ * {
+ *   "usersCount": 42,
+ *   "metrics": {
+ *     "visits": { "value": 128, "best": 982, "rank": 6 },
+ *     "operations": { "value": 356, "best": 2140, "rank": 4 },
+ *     "operationPerSession": { "value": 5.42, "best": 12.87, "rank": 7 },
+ *     "importCount": { "value": 48, "best": 310, "rank": 5 },
+ *     "exportCount": { "value": 39, "best": 275, "rank": 6 },
+ *     "sessionTimeTotal": { "value": 124.75, "best": 980.33, "rank": 8 },
+ *     "eventsPerMinute": { "value": 2.85, "best": 6.21, "rank": 9 }
+ *   }
+ * }
+ *
+ * Body:
+ * {
+ *   excludedUserIds: ["admin", "testUser"]
+ * }
+ */
+exports.getUserComparison = async (req, res) => {
+  const userId = req.params.userId;
+  const excludedUserIds = req.body.excludedUserIds || [];
+
+  try {
+    // Build exclusion SQL
+    const exclusionSql =
+      excludedUserIds.length > 0
+        ? `WHERE u.userId NOT IN (${excludedUserIds.map(() => "?").join(",")})`
+        : "";
+
+    const params = [...excludedUserIds];
+
+    /**
+     * Aggregate metrics per user (Safe – no JOIN duplication)
+     */
+    const [rows] = await db.query(
+      `
+      SELECT
+        u.userId,
+
+        -- Visits
+        (SELECT COUNT(*) FROM visits v WHERE v.userId = u.userId) AS visitCount,
+
+        -- Total events
+        (SELECT COUNT(*) FROM events e WHERE e.userId = u.userId) AS totalEvents,
+
+        -- Operations
+        (SELECT COUNT(*) FROM events e 
+          WHERE e.userId = u.userId
+          AND e.eventType NOT IN ('uploadImage','exportImage','toggleTool','keyboardShortcuts')
+        ) AS operationCount,
+
+        -- Import
+        (SELECT COUNT(*) FROM events e 
+          WHERE e.userId = u.userId
+          AND e.eventType = 'uploadImage'
+        ) AS importCount,
+
+        -- Export
+        (SELECT COUNT(*) FROM events e 
+          WHERE e.userId = u.userId
+          AND e.eventType = 'exportImage'
+        ) AS exportCount,
+
+        -- Sessions
+        (SELECT COUNT(*) FROM sessions s WHERE s.userId = u.userId) AS sessionCount,
+
+        -- Total session time (minutes)
+        (SELECT SUM(durationMs) FROM sessions s WHERE s.userId = u.userId) / 60000 AS sessionTimeTotal,
+
+        -- Operation per session
+        (
+          CASE 
+            WHEN (SELECT COUNT(*) FROM sessions s WHERE s.userId = u.userId) > 0
+            THEN
+              (SELECT COUNT(*) FROM events e 
+                WHERE e.userId = u.userId
+                AND e.eventType NOT IN ('uploadImage','exportImage','toggleTool','keyboardShortcuts')
+              ) 
+              /
+              (SELECT COUNT(*) FROM sessions s WHERE s.userId = u.userId)
+            ELSE 0
+          END
+        ) AS operationPerSession,
+
+        -- Events per minute
+        (
+          CASE 
+            WHEN (SELECT SUM(durationMs) FROM sessions s WHERE s.userId = u.userId) > 0
+            THEN
+              (SELECT COUNT(*) FROM events e WHERE e.userId = u.userId)
+              /
+              ((SELECT SUM(durationMs) FROM sessions s WHERE s.userId = u.userId) / 60000)
+            ELSE 0
+          END
+        ) AS eventsPerMinute
+
+      FROM users u
+      ${exclusionSql}
+      `,
+      params,
+    );
+
+    /**
+     * Ranking helper
+     */
+    const buildMetric = (key) => {
+      const sorted = [...rows].sort((a, b) => (b[key] || 0) - (a[key] || 0));
+
+      const best = sorted[0]?.[key] || 0;
+
+      const rankIndex = sorted.findIndex((u) => u.userId === userId);
+      const rank = rankIndex !== -1 ? rankIndex + 1 : null;
+
+      const userRow = rows.find((u) => u.userId === userId);
+
+      return {
+        value: Number((userRow?.[key] || 0).toFixed(2)),
+        best: Number(best.toFixed(2)),
+        rank,
+      };
+    };
+
+    /**
+     * Response
+     */
+    res.json({
+      usersCount: rows.length,
+
+      metrics: {
+        visits: buildMetric("visitCount"),
+        operations: buildMetric("operationCount"),
+        operationPerSession: buildMetric("operationPerSession"),
+        importCount: buildMetric("importCount"),
+        exportCount: buildMetric("exportCount"),
+        sessionTimeTotal: buildMetric("sessionTimeTotal"),
+        eventsPerMinute: buildMetric("eventsPerMinute"),
+      },
     });
   } catch (err) {
     console.error(err);
