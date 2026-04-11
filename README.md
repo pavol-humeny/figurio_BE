@@ -88,11 +88,15 @@ Frontend (produkcia): https://pavol-humeny.github.io/figurio/
 - **events** (`eventId`, `userId`, `eventType`, `data`, `timestamp`)  
   Eviduje produktové eventy (upload, export, použitie nástrojov, shortcuty, modaly, inštalácia appky, ...).
 
+- **ratings** (`ratingId`, `userId`, `rating`, `feedback`, `numberOfExports`) 
+  Eviduje hodnotenie aplikácie.
+
 ### Vzťahy
 
 - `users (1) -> (N) visits`
 - `users (1) -> (N) sessions`
 - `users (1) -> (N) events`
+- `users (1) -> (1) ratings`
 
 ---
 
@@ -168,6 +172,35 @@ Frontend (produkcia): https://pavol-humeny.github.io/figurio/
 - **Výstup:** `[{ userId, minSession, maxSession, avgSession, totalSessionsTime }]`
 - **Popis:** Agregované session metriky podľa používateľa.
 
+### `GET /api/users/:userId/userVisits`
+- **Typ:** GET
+- **Vstup:** `userId` (path)
+- **Výstup:** `{ totalVisits, activeDays, longestStreak, firstVisit }`
+- **Popis:** Základné štatistiky návštev používateľa vrátane počtu aktívnych dní a najdlhšej série návštev.
+
+### `GET /api/users/:userId/toolUsage`
+- **Typ:** GET
+- **Vstup:** `userId` (path)
+- **Výstup:** `{ totalInteractions, tools: [{ tool, usage, percentage }] }`
+- **Popis:** Štatistika používania nástrojov vhodná pre radar chart.
+
+### `GET /api/users/:userId/eventsStats`
+- **Typ:** GET
+- **Vstup:** `userId` (path)
+- **Výstup:** komplexný objekt s import/export štatistikami, formátmi, veľkosťami a rankingom
+- **Popis:** Detailná analytika eventov používateľa vrátane formátov, veľkostí obrázkov a poradia medzi používateľmi.
+
+### `GET /api/users/:userId/sessionStats`
+- **Typ:** GET
+- **Vstup:** `userId` (path)
+- **Výstup:** `{ sessionCount, sessionDuration, totalEvents, eventsPerMinute, perSession, keyboardShortcuts }`
+- **Popis:** Štatistiky session používateľa vrátane dĺžky session, eventov a priemerov na session.
+
+### `GET /api/users/:userId/comparison`
+- **Typ:** GET
+- **Vstup:** `userId` (path)
+- **Výstup:** `{ usersCount, metrics: { ... } }`
+- **Popis:** Porovnanie používateľa s ostatnými vrátane ranku a najlepších hodnôt v jednotlivých metrikách.
 ---
 
 ## 2) Events analytics (`/api/events`)
