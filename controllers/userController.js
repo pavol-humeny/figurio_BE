@@ -356,27 +356,31 @@ exports.getUserToolUsage = async (req, res) => {
  * Get user events statistics
  * Example response:
  *  {
-      "totalEvents": 532,
-      "rank": 3,
-      "import": {
-        "total": 45,
-        "formats": [
-          { "format": "png", "count": 20 },
-          { "format": "jpg", "count": 15 }
-        ],
-        "smallest": { "width": 200, "height": 100 },
-        "largest": { "width": 1920, "height": 1080 }
-      },
-      "export": {
-        "total": 38,
-        "formats": [
-          { "format": "png", "count": 25 },
-          { "format": "pdf", "count": 13 }
-        ],
-        "smallest": { "width": 300, "height": 200 },
-        "largest": { "width": 1920, "height": 1080 }
-      }
-    }
+ *    "totalEvents": 532,
+ *    "rank": 3,
+ *    "import": {
+ *      "total": 45,
+ *      "formats": [
+ *        { "format": "png", "count": 20 },
+ *        { "format": "jpg", "count": 15 }
+ *      ],
+ *      "smallest": { "width": 200, "height": 100 },
+ *      "largest": { "width": 1920, "height": 1080 },
+ *      "smallestBySize": { "sizeKB": 34 },
+ *      "largestBySize": { "sizeKB": 820 }
+ *    },
+ *    "export": {
+ *      "total": 38,
+ *      "formats": [
+ *        { "format": "png", "count": 25 },
+ *        { "format": "pdf", "count": 13 }
+ *      ],
+ *      "smallest": { "width": 300, "height": 200 },
+ *      "largest": { "width": 1920, "height": 1080 },
+ *      "smallestBySize": { "sizeKB": 28 },
+ *      "largestBySize": { "sizeKB": 910 }
+ *    }
+ *  }
  */
 exports.getUserEventsStats = async (req, res) => {
   const userId = req.params.userId;
@@ -406,11 +410,7 @@ exports.getUserEventsStats = async (req, res) => {
       `
       SELECT
         JSON_UNQUOTE(JSON_EXTRACT(data, '$.fileFormat')) AS format,
-        COUNT(*) AS count,
-        MIN(JSON_EXTRACT(data, '$.fileWidth')) AS minW,
-        MIN(JSON_EXTRACT(data, '$.fileHeight')) AS minH,
-        MAX(JSON_EXTRACT(data, '$.fileWidth')) AS maxW,
-        MAX(JSON_EXTRACT(data, '$.fileHeight')) AS maxH
+        COUNT(*) AS count
       FROM events
       WHERE userId = ?
         AND eventType = 'uploadImage'
@@ -420,13 +420,41 @@ exports.getUserEventsStats = async (req, res) => {
       [userId],
     );
 
-    const [[importGlobal]] = await db.query(
+    // PIXEL SIZE (independent)
+    const [[importSmallestPx]] = await db.query(
       `
       SELECT
-        MIN(JSON_EXTRACT(data, '$.fileWidth')) AS minW,
-        MIN(JSON_EXTRACT(data, '$.fileHeight')) AS minH,
-        MAX(JSON_EXTRACT(data, '$.fileWidth')) AS maxW,
-        MAX(JSON_EXTRACT(data, '$.fileHeight')) AS maxH
+        JSON_EXTRACT(data, '$.fileWidth') AS width,
+        JSON_EXTRACT(data, '$.fileHeight') AS height
+      FROM events
+      WHERE userId = ?
+        AND eventType = 'uploadImage'
+      ORDER BY (JSON_EXTRACT(data, '$.fileWidth') * JSON_EXTRACT(data, '$.fileHeight')) ASC
+      LIMIT 1
+      `,
+      [userId],
+    );
+
+    const [[importLargestPx]] = await db.query(
+      `
+      SELECT
+        JSON_EXTRACT(data, '$.fileWidth') AS width,
+        JSON_EXTRACT(data, '$.fileHeight') AS height
+      FROM events
+      WHERE userId = ?
+        AND eventType = 'uploadImage'
+      ORDER BY (JSON_EXTRACT(data, '$.fileWidth') * JSON_EXTRACT(data, '$.fileHeight')) DESC
+      LIMIT 1
+      `,
+      [userId],
+    );
+
+    // FILE SIZE (independent)
+    const [[importSizeStats]] = await db.query(
+      `
+      SELECT
+        MIN(JSON_EXTRACT(data, '$.fileSize')) AS minSize,
+        MAX(JSON_EXTRACT(data, '$.fileSize')) AS maxSize
       FROM events
       WHERE userId = ?
         AND eventType = 'uploadImage'
@@ -443,7 +471,6 @@ exports.getUserEventsStats = async (req, res) => {
         fileFormat AS format,
         COUNT(*) AS count
       FROM (
-        -- Standard exportImage events
         SELECT 
           JSON_UNQUOTE(JSON_EXTRACT(data, '$.fileFormat')) AS fileFormat
         FROM events
@@ -453,7 +480,6 @@ exports.getUserEventsStats = async (req, res) => {
 
         UNION ALL
 
-        -- Copy to clipboard as virtual export
         SELECT
           'copyToClipboard' AS fileFormat
         FROM events
@@ -466,14 +492,41 @@ exports.getUserEventsStats = async (req, res) => {
       [userId, userId],
     );
 
-    // Global size stats only for exportImage (copyToClipboard doesn't have size)
-    const [[exportGlobal]] = await db.query(
+    // PIXEL SIZE (independent)
+    const [[exportSmallestPx]] = await db.query(
       `
       SELECT
-        MIN(JSON_EXTRACT(data, '$.fileWidth')) AS minW,
-        MIN(JSON_EXTRACT(data, '$.fileHeight')) AS minH,
-        MAX(JSON_EXTRACT(data, '$.fileWidth')) AS maxW,
-        MAX(JSON_EXTRACT(data, '$.fileHeight')) AS maxH
+        JSON_EXTRACT(data, '$.fileWidth') AS width,
+        JSON_EXTRACT(data, '$.fileHeight') AS height
+      FROM events
+      WHERE userId = ?
+        AND eventType = 'exportImage'
+      ORDER BY (JSON_EXTRACT(data, '$.fileWidth') * JSON_EXTRACT(data, '$.fileHeight')) ASC
+      LIMIT 1
+      `,
+      [userId],
+    );
+
+    const [[exportLargestPx]] = await db.query(
+      `
+      SELECT
+        JSON_EXTRACT(data, '$.fileWidth') AS width,
+        JSON_EXTRACT(data, '$.fileHeight') AS height
+      FROM events
+      WHERE userId = ?
+        AND eventType = 'exportImage'
+      ORDER BY (JSON_EXTRACT(data, '$.fileWidth') * JSON_EXTRACT(data, '$.fileHeight')) DESC
+      LIMIT 1
+      `,
+      [userId],
+    );
+
+    // FILE SIZE (independent)
+    const [[exportSizeStats]] = await db.query(
+      `
+      SELECT
+        MIN(JSON_EXTRACT(data, '$.fileSize')) AS minSize,
+        MAX(JSON_EXTRACT(data, '$.fileSize')) AS maxSize
       FROM events
       WHERE userId = ?
         AND eventType = 'exportImage'
@@ -494,13 +547,31 @@ exports.getUserEventsStats = async (req, res) => {
           format: r.format,
           count: r.count,
         })),
-        smallest:
-          importGlobal?.minW != null
-            ? { width: importGlobal.minW, height: importGlobal.minH }
+
+        // PIXELS
+        smallest: importSmallestPx
+          ? {
+              width: importSmallestPx.width,
+              height: importSmallestPx.height,
+            }
+          : null,
+
+        largest: importLargestPx
+          ? {
+              width: importLargestPx.width,
+              height: importLargestPx.height,
+            }
+          : null,
+
+        // FILE SIZE (KB)
+        smallestBySize:
+          importSizeStats?.minSize != null
+            ? { sizeKB: Math.round(importSizeStats.minSize / 1024) }
             : null,
-        largest:
-          importGlobal?.maxW != null
-            ? { width: importGlobal.maxW, height: importGlobal.maxH }
+
+        largestBySize:
+          importSizeStats?.maxSize != null
+            ? { sizeKB: Math.round(importSizeStats.maxSize / 1024) }
             : null,
       },
 
@@ -510,13 +581,31 @@ exports.getUserEventsStats = async (req, res) => {
           format: r.format,
           count: r.count,
         })),
-        smallest:
-          exportGlobal?.minW != null
-            ? { width: exportGlobal.minW, height: exportGlobal.minH }
+
+        // PIXELS
+        smallest: exportSmallestPx
+          ? {
+              width: exportSmallestPx.width,
+              height: exportSmallestPx.height,
+            }
+          : null,
+
+        largest: exportLargestPx
+          ? {
+              width: exportLargestPx.width,
+              height: exportLargestPx.height,
+            }
+          : null,
+
+        // FILE SIZE (KB)
+        smallestBySize:
+          exportSizeStats?.minSize != null
+            ? { sizeKB: Math.round(exportSizeStats.minSize / 1024) }
             : null,
-        largest:
-          exportGlobal?.maxW != null
-            ? { width: exportGlobal.maxW, height: exportGlobal.maxH }
+
+        largestBySize:
+          exportSizeStats?.maxSize != null
+            ? { sizeKB: Math.round(exportSizeStats.maxSize / 1024) }
             : null,
       },
     });
