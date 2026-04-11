@@ -386,7 +386,9 @@ exports.getUserEventsStats = async (req, res) => {
   const userId = req.params.userId;
 
   try {
+    // =========================
     // 1. TOTAL EVENTS + RANK
+    // =========================
     const [[userTotal]] = await db.query(
       `SELECT COUNT(*) AS totalEvents
        FROM events
@@ -401,16 +403,17 @@ exports.getUserEventsStats = async (req, res) => {
       ORDER BY totalEvents DESC
     `);
 
-    const rank = ranking.findIndex((u) => u.userId === userId) + 1 || null;
+    const rankIndex = ranking.findIndex((u) => u.userId === userId);
+    const rank = rankIndex !== -1 ? rankIndex + 1 : null;
 
+    // =========================
     // 2. IMPORT (uploadImage)
+    // =========================
     const [imports] = await db.query(
       `
       SELECT
         JSON_UNQUOTE(JSON_EXTRACT(data, '$.fileFormat')) AS format,
         COUNT(*) AS count,
-        MIN(JSON_EXTRACT(data, '$.fileWidth') * JSON_EXTRACT(data, '$.fileHeight')) AS minSize,
-        MAX(JSON_EXTRACT(data, '$.fileWidth') * JSON_EXTRACT(data, '$.fileHeight')) AS maxSize,
         MIN(JSON_EXTRACT(data, '$.fileWidth')) AS minW,
         MIN(JSON_EXTRACT(data, '$.fileHeight')) AS minH,
         MAX(JSON_EXTRACT(data, '$.fileWidth')) AS maxW,
@@ -418,21 +421,36 @@ exports.getUserEventsStats = async (req, res) => {
       FROM events
       WHERE userId = ?
         AND eventType = 'uploadImage'
-      GROUP BY format
+        AND JSON_EXTRACT(data, '$.fileFormat') IS NOT NULL
+      GROUP BY JSON_UNQUOTE(JSON_EXTRACT(data, '$.fileFormat'))
+      `,
+      [userId],
+    );
+
+    const [[importGlobal]] = await db.query(
+      `
+      SELECT
+        MIN(JSON_EXTRACT(data, '$.fileWidth')) AS minW,
+        MIN(JSON_EXTRACT(data, '$.fileHeight')) AS minH,
+        MAX(JSON_EXTRACT(data, '$.fileWidth')) AS maxW,
+        MAX(JSON_EXTRACT(data, '$.fileHeight')) AS maxH
+      FROM events
+      WHERE userId = ?
+        AND eventType = 'uploadImage'
       `,
       [userId],
     );
 
     const importTotal = imports.reduce((sum, r) => sum + r.count, 0);
 
+    // =========================
     // 3. EXPORT (exportImage)
+    // =========================
     const [exportsData] = await db.query(
       `
       SELECT
         JSON_UNQUOTE(JSON_EXTRACT(data, '$.fileFormat')) AS format,
         COUNT(*) AS count,
-        MIN(JSON_EXTRACT(data, '$.fileWidth') * JSON_EXTRACT(data, '$.fileHeight')) AS minSize,
-        MAX(JSON_EXTRACT(data, '$.fileWidth') * JSON_EXTRACT(data, '$.fileHeight')) AS maxSize,
         MIN(JSON_EXTRACT(data, '$.fileWidth')) AS minW,
         MIN(JSON_EXTRACT(data, '$.fileHeight')) AS minH,
         MAX(JSON_EXTRACT(data, '$.fileWidth')) AS maxW,
@@ -440,14 +458,31 @@ exports.getUserEventsStats = async (req, res) => {
       FROM events
       WHERE userId = ?
         AND eventType = 'exportImage'
-      GROUP BY format
+        AND JSON_EXTRACT(data, '$.fileFormat') IS NOT NULL
+      GROUP BY JSON_UNQUOTE(JSON_EXTRACT(data, '$.fileFormat'))
+      `,
+      [userId],
+    );
+
+    const [[exportGlobal]] = await db.query(
+      `
+      SELECT
+        MIN(JSON_EXTRACT(data, '$.fileWidth')) AS minW,
+        MIN(JSON_EXTRACT(data, '$.fileHeight')) AS minH,
+        MAX(JSON_EXTRACT(data, '$.fileWidth')) AS maxW,
+        MAX(JSON_EXTRACT(data, '$.fileHeight')) AS maxH
+      FROM events
+      WHERE userId = ?
+        AND eventType = 'exportImage'
       `,
       [userId],
     );
 
     const exportTotal = exportsData.reduce((sum, r) => sum + r.count, 0);
 
+    // =========================
     // 4. MODALS
+    // =========================
     const [modals] = await db.query(
       `
       SELECT
@@ -456,12 +491,15 @@ exports.getUserEventsStats = async (req, res) => {
       FROM events
       WHERE userId = ?
         AND eventType = 'openModal'
-      GROUP BY modal
+        AND JSON_EXTRACT(data, '$.modal') IS NOT NULL
+      GROUP BY JSON_UNQUOTE(JSON_EXTRACT(data, '$.modal'))
       `,
       [userId],
     );
 
-    // RESPONSE FORMAT
+    // =========================
+    // RESPONSE
+    // =========================
     res.json({
       totalEvents: userTotal.totalEvents,
       rank,
@@ -472,12 +510,14 @@ exports.getUserEventsStats = async (req, res) => {
           format: r.format,
           count: r.count,
         })),
-        smallest: imports.length
-          ? { width: imports[0].minW, height: imports[0].minH }
-          : null,
-        largest: imports.length
-          ? { width: imports[0].maxW, height: imports[0].maxH }
-          : null,
+        smallest:
+          importGlobal?.minW != null
+            ? { width: importGlobal.minW, height: importGlobal.minH }
+            : null,
+        largest:
+          importGlobal?.maxW != null
+            ? { width: importGlobal.maxW, height: importGlobal.maxH }
+            : null,
       },
 
       export: {
@@ -486,12 +526,14 @@ exports.getUserEventsStats = async (req, res) => {
           format: r.format,
           count: r.count,
         })),
-        smallest: exportsData.length
-          ? { width: exportsData[0].minW, height: exportsData[0].minH }
-          : null,
-        largest: exportsData.length
-          ? { width: exportsData[0].maxW, height: exportsData[0].maxH }
-          : null,
+        smallest:
+          exportGlobal?.minW != null
+            ? { width: exportGlobal.minW, height: exportGlobal.minH }
+            : null,
+        largest:
+          exportGlobal?.maxW != null
+            ? { width: exportGlobal.maxW, height: exportGlobal.maxH }
+            : null,
       },
 
       modals: modals.map((m) => ({
