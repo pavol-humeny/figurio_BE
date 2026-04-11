@@ -673,8 +673,8 @@ exports.getUserSessionStats = async (req, res) => {
         SUM(eventType = 'uploadImage') AS importCount,
         SUM(eventType = 'exportImage') AS exportCount,
         SUM(eventType = 'toggleTool') AS toolToggleCount,
-        SUM(eventType = 'keyboardShortcut') AS keyboardShortcutCount,
-        SUM(eventType NOT IN ('uploadImage', 'exportImage', 'toggleTool', 'keyboardShortcut')) AS operationCount
+        SUM(eventType = 'keyboardShortcuts') AS keyboardShortcutCount,
+        SUM(eventType NOT IN ('uploadImage', 'exportImage', 'toggleTool', 'keyboardShortcuts')) AS operationCount
       FROM events
       WHERE userId = ?
       `,
