@@ -351,3 +351,156 @@ exports.getUserToolUsage = async (req, res) => {
     res.status(500).send("Server error");
   }
 };
+
+/**
+ * Get user events statistics
+ * Example response:
+ *  {
+      "totalEvents": 532,
+      "rank": 3,
+      "import": {
+        "total": 45,
+        "formats": [
+          { "format": "png", "count": 20 },
+          { "format": "jpg", "count": 15 }
+        ],
+        "smallest": { "width": 200, "height": 100 },
+        "largest": { "width": 1920, "height": 1080 }
+      },
+      "export": {
+        "total": 38,
+        "formats": [
+          { "format": "png", "count": 25 },
+          { "format": "pdf", "count": 13 }
+        ],
+        "smallest": { "width": 300, "height": 200 },
+        "largest": { "width": 1920, "height": 1080 }
+      },
+      "modals": [
+        { "modal": "export", "count": 12 },
+        { "modal": "settings", "count": 5 }
+      ]
+    }
+ */
+exports.getUserEventsStats = async (req, res) => {
+  const userId = req.params.userId;
+
+  try {
+    // 1. TOTAL EVENTS + RANK
+    const [[userTotal]] = await db.query(
+      `SELECT COUNT(*) AS totalEvents
+       FROM events
+       WHERE userId = ?`,
+      [userId],
+    );
+
+    const [ranking] = await db.query(`
+      SELECT userId, COUNT(*) AS totalEvents
+      FROM events
+      GROUP BY userId
+      ORDER BY totalEvents DESC
+    `);
+
+    const rank = ranking.findIndex((u) => u.userId === userId) + 1 || null;
+
+    // 2. IMPORT (uploadImage)
+    const [imports] = await db.query(
+      `
+      SELECT
+        JSON_UNQUOTE(JSON_EXTRACT(data, '$.fileFormat')) AS format,
+        COUNT(*) AS count,
+        MIN(JSON_EXTRACT(data, '$.fileWidth') * JSON_EXTRACT(data, '$.fileHeight')) AS minSize,
+        MAX(JSON_EXTRACT(data, '$.fileWidth') * JSON_EXTRACT(data, '$.fileHeight')) AS maxSize,
+        MIN(JSON_EXTRACT(data, '$.fileWidth')) AS minW,
+        MIN(JSON_EXTRACT(data, '$.fileHeight')) AS minH,
+        MAX(JSON_EXTRACT(data, '$.fileWidth')) AS maxW,
+        MAX(JSON_EXTRACT(data, '$.fileHeight')) AS maxH
+      FROM events
+      WHERE userId = ?
+        AND eventType = 'uploadImage'
+      GROUP BY format
+      `,
+      [userId],
+    );
+
+    const importTotal = imports.reduce((sum, r) => sum + r.count, 0);
+
+    // 3. EXPORT (exportImage)
+    const [exportsData] = await db.query(
+      `
+      SELECT
+        JSON_UNQUOTE(JSON_EXTRACT(data, '$.fileFormat')) AS format,
+        COUNT(*) AS count,
+        MIN(JSON_EXTRACT(data, '$.fileWidth') * JSON_EXTRACT(data, '$.fileHeight')) AS minSize,
+        MAX(JSON_EXTRACT(data, '$.fileWidth') * JSON_EXTRACT(data, '$.fileHeight')) AS maxSize,
+        MIN(JSON_EXTRACT(data, '$.fileWidth')) AS minW,
+        MIN(JSON_EXTRACT(data, '$.fileHeight')) AS minH,
+        MAX(JSON_EXTRACT(data, '$.fileWidth')) AS maxW,
+        MAX(JSON_EXTRACT(data, '$.fileHeight')) AS maxH
+      FROM events
+      WHERE userId = ?
+        AND eventType = 'exportImage'
+      GROUP BY format
+      `,
+      [userId],
+    );
+
+    const exportTotal = exportsData.reduce((sum, r) => sum + r.count, 0);
+
+    // 4. MODALS
+    const [modals] = await db.query(
+      `
+      SELECT
+        JSON_UNQUOTE(JSON_EXTRACT(data, '$.modal')) AS modal,
+        COUNT(*) AS count
+      FROM events
+      WHERE userId = ?
+        AND eventType = 'openModal'
+      GROUP BY modal
+      `,
+      [userId],
+    );
+
+    // RESPONSE FORMAT
+    res.json({
+      totalEvents: userTotal.totalEvents,
+      rank,
+
+      import: {
+        total: importTotal,
+        formats: imports.map((r) => ({
+          format: r.format,
+          count: r.count,
+        })),
+        smallest: imports.length
+          ? { width: imports[0].minW, height: imports[0].minH }
+          : null,
+        largest: imports.length
+          ? { width: imports[0].maxW, height: imports[0].maxH }
+          : null,
+      },
+
+      export: {
+        total: exportTotal,
+        formats: exportsData.map((r) => ({
+          format: r.format,
+          count: r.count,
+        })),
+        smallest: exportsData.length
+          ? { width: exportsData[0].minW, height: exportsData[0].minH }
+          : null,
+        largest: exportsData.length
+          ? { width: exportsData[0].maxW, height: exportsData[0].maxH }
+          : null,
+      },
+
+      modals: modals.map((m) => ({
+        modal: m.modal,
+        count: m.count,
+      })),
+    });
+  } catch (err) {
+    console.error(err);
+    res.status(500).send("Server error");
+  }
+};

@@ -12,5 +12,6 @@ router.get("/sessions", userController.getUserSessions);
 router.get("/sessionDurationByUser", userController.getSessionDurationByUser);
 router.get("/:userId/userVisits", userController.getUserVisits);
 router.get("/:userId/toolUsage", userController.getUserToolUsage);
+router.get("/:userId/eventsStats", userController.getUserEventsStats);
 
 module.exports = router;
