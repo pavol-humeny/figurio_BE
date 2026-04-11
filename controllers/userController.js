@@ -836,6 +836,21 @@ exports.getUserComparison = async (req, res) => {
           END
         ) AS eventsPerMinute
 
+        -- Export success rate (export / import)
+        (
+          CASE 
+            WHEN (SELECT COUNT(*) FROM events e 
+                  WHERE e.userId = u.userId AND e.eventType = 'uploadImage') > 0
+            THEN
+              (SELECT COUNT(*) FROM events e 
+                WHERE e.userId = u.userId AND e.eventType = 'exportImage')
+              /
+              (SELECT COUNT(*) FROM events e 
+                WHERE e.userId = u.userId AND e.eventType = 'uploadImage')
+            ELSE 0
+          END
+        ) AS exportRate
+
       FROM users u
       ${exclusionSql}
       `,
@@ -886,6 +901,7 @@ exports.getUserComparison = async (req, res) => {
         exportCount: buildMetric("exportCount"),
         sessionTimeTotal: buildMetric("sessionTimeTotal"),
         eventsPerMinute: buildMetric("eventsPerMinute"),
+        exportRate: buildMetric("exportRate"),
       },
     });
   } catch (err) {
