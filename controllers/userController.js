@@ -856,7 +856,6 @@ exports.getUserComparison = async (req, res) => {
         ) AS exportRate
 
       FROM users u
-      ${exclusionSql}
       `,
       params,
     );
@@ -871,7 +870,12 @@ exports.getUserComparison = async (req, res) => {
      * Ranking helper
      */
     const buildMetric = (key) => {
-      const sorted = [...rows].sort(
+      // Exclude users ONLY for ranking (not current user)
+      const filtered = rows.filter(
+        (u) => !excludedUserIds.includes(u.userId) || u.userId === userId,
+      );
+
+      const sorted = [...filtered].sort(
         (a, b) => toNumber(b[key]) - toNumber(a[key]),
       );
 
