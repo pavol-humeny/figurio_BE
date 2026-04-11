@@ -386,9 +386,7 @@ exports.getUserEventsStats = async (req, res) => {
   const userId = req.params.userId;
 
   try {
-    // =========================
     // 1. TOTAL EVENTS + RANK
-    // =========================
     const [[userTotal]] = await db.query(
       `SELECT COUNT(*) AS totalEvents
        FROM events
@@ -406,9 +404,7 @@ exports.getUserEventsStats = async (req, res) => {
     const rankIndex = ranking.findIndex((u) => u.userId === userId);
     const rank = rankIndex !== -1 ? rankIndex + 1 : null;
 
-    // =========================
     // 2. IMPORT (uploadImage)
-    // =========================
     const [imports] = await db.query(
       `
       SELECT
@@ -443,27 +439,37 @@ exports.getUserEventsStats = async (req, res) => {
 
     const importTotal = imports.reduce((sum, r) => sum + r.count, 0);
 
-    // =========================
-    // 3. EXPORT (exportImage)
-    // =========================
+    // 3. EXPORT (exportImage + copyToClipboard)
     const [exportsData] = await db.query(
       `
       SELECT
-        JSON_UNQUOTE(JSON_EXTRACT(data, '$.fileFormat')) AS format,
-        COUNT(*) AS count,
-        MIN(JSON_EXTRACT(data, '$.fileWidth')) AS minW,
-        MIN(JSON_EXTRACT(data, '$.fileHeight')) AS minH,
-        MAX(JSON_EXTRACT(data, '$.fileWidth')) AS maxW,
-        MAX(JSON_EXTRACT(data, '$.fileHeight')) AS maxH
-      FROM events
-      WHERE userId = ?
-        AND eventType = 'exportImage'
-        AND JSON_EXTRACT(data, '$.fileFormat') IS NOT NULL
-      GROUP BY JSON_UNQUOTE(JSON_EXTRACT(data, '$.fileFormat'))
+        fileFormat AS format,
+        COUNT(*) AS count
+      FROM (
+        -- Standard exportImage events
+        SELECT 
+          JSON_UNQUOTE(JSON_EXTRACT(data, '$.fileFormat')) AS fileFormat
+        FROM events
+        WHERE userId = ?
+          AND eventType = 'exportImage'
+          AND JSON_EXTRACT(data, '$.fileFormat') IS NOT NULL
+
+        UNION ALL
+
+        -- Copy to clipboard as virtual export
+        SELECT
+          'copyToClipboard' AS fileFormat
+        FROM events
+        WHERE userId = ?
+          AND eventType = 'buttonClicked'
+          AND JSON_UNQUOTE(JSON_EXTRACT(data, '$.button')) = 'copyImageToClipboard'
+      ) AS combined
+      GROUP BY fileFormat
       `,
-      [userId],
+      [userId, userId],
     );
 
+    // Global size stats len pre exportImage (clipboard nemá rozmery)
     const [[exportGlobal]] = await db.query(
       `
       SELECT
@@ -480,9 +486,7 @@ exports.getUserEventsStats = async (req, res) => {
 
     const exportTotal = exportsData.reduce((sum, r) => sum + r.count, 0);
 
-    // =========================
     // 4. MODALS
-    // =========================
     const [modals] = await db.query(
       `
       SELECT
@@ -497,9 +501,7 @@ exports.getUserEventsStats = async (req, res) => {
       [userId],
     );
 
-    // =========================
     // RESPONSE
-    // =========================
     res.json({
       totalEvents: userTotal.totalEvents,
       rank,
