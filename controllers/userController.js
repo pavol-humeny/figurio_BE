@@ -619,19 +619,26 @@ exports.getUserEventsStats = async (req, res) => {
  * Get session statistics for user
  * Example response:
  *  {
+      "sessionCount": 12,
       "sessionDuration": {
-        "min": 12,
+        "min": 15,
         "max": 320,
         "avg": 85,
-        "total": 5400
+        "total": 1020
       },
-      "eventsPerSession": {
-        "import": 1.2,
-        "export": 0.8,
-        "operation": 5.6
+      "totalEvents": 540,
+      "eventsPerMinute": 3.25,
+      "perSession": {
+        "import": 1.17,
+        "export": 0.83,
+        "toolToggle": 4.25,
+        "operation": 6.91
       },
-      "eventsPerMinute": 3.4
+      "keyboardShortcuts": 120
     }
+ */
+/**
+ * Get session statistics for user
  */
 exports.getUserSessionStats = async (req, res) => {
   const userId = req.params.userId;
@@ -647,7 +654,7 @@ exports.getUserSessionStats = async (req, res) => {
       [userId],
     );
 
-    const sessionCount = sessions.length || 1;
+    const sessionCount = sessions.length;
 
     const durationsSec = sessions.map((s) => Math.floor(s.durationMs / 1000));
 
@@ -658,49 +665,65 @@ exports.getUserSessionStats = async (req, res) => {
       ? Math.round(totalDuration / durationsSec.length)
       : 0;
 
-    // 2. EVENTS (GLOBAL COUNTS)
+    // 2. EVENTS (GLOBAL)
     const [[events]] = await db.query(
       `
       SELECT
+        COUNT(*) AS totalEvents,
         SUM(eventType = 'uploadImage') AS importCount,
         SUM(eventType = 'exportImage') AS exportCount,
-        SUM(eventType NOT IN ('uploadImage', 'exportImage')) AS operationCount,
-        COUNT(*) AS totalEvents
+        SUM(eventType = 'toggleTool') AS toolToggleCount,
+        SUM(eventType = 'keyboardShortcut') AS keyboardShortcutCount,
+        SUM(eventType NOT IN ('uploadImage', 'exportImage', 'toggleTool', 'keyboardShortcut')) AS operationCount
       FROM events
       WHERE userId = ?
       `,
       [userId],
     );
 
+    const totalEvents = events.totalEvents || 0;
     const totalImport = events.importCount || 0;
     const totalExport = events.exportCount || 0;
+    const totalToolToggle = events.toolToggleCount || 0;
+    const totalKeyboard = events.keyboardShortcutCount || 0;
     const totalOperation = events.operationCount || 0;
-    const totalEvents = events.totalEvents || 0;
 
-    // PER SESSION (simple division)
-    const avgImport = totalImport / sessionCount;
-    const avgExport = totalExport / sessionCount;
-    const avgOperation = totalOperation / sessionCount;
+    // 3. PER SESSION (safe divide)
+    const safeDivide = (value) => (sessionCount > 0 ? value / sessionCount : 0);
 
-    // 3. EVENTS PER MINUTE
+    const importPerSession = safeDivide(totalImport);
+    const exportPerSession = safeDivide(totalExport);
+    const toolTogglePerSession = safeDivide(totalToolToggle);
+    const operationPerSession = safeDivide(totalOperation);
+
+    // 4. EVENTS PER MINUTE
     const totalMinutes = totalDuration / 60;
 
     const eventsPerMinute = totalMinutes > 0 ? totalEvents / totalMinutes : 0;
 
     // RESPONSE
     res.json({
+      sessionCount,
+
       sessionDuration: {
         min: minDuration,
         max: maxDuration,
         avg: avgDuration,
         total: totalDuration,
       },
-      eventsPerSession: {
-        import: Number(avgImport.toFixed(2)),
-        export: Number(avgExport.toFixed(2)),
-        operation: Number(avgOperation.toFixed(2)),
-      },
+
+      totalEvents,
+
       eventsPerMinute: Number(eventsPerMinute.toFixed(2)),
+
+      perSession: {
+        import: Number(importPerSession.toFixed(2)),
+        export: Number(exportPerSession.toFixed(2)),
+        toolToggle: Number(toolTogglePerSession.toFixed(2)),
+        operation: Number(operationPerSession.toFixed(2)),
+      },
+
+      keyboardShortcuts: totalKeyboard,
     });
   } catch (err) {
     console.error(err);
