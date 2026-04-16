@@ -331,7 +331,7 @@ exports.getAppRating = async (req, res) => {
   try {
     const [rows] = await db.query(`
       SELECT 
-        AVG(rating) AS averageRating,
+        ROUND(AVG(rating), 1) AS averageRating,
         COUNT(*) AS totalRatings
       FROM ratings
     `);
