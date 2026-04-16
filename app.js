@@ -1,3 +1,10 @@
+/**
+ * @file: app.js
+ * @author: Pavol Humeny
+ * @date: 15.5.2026
+ * @description: Main application file for the Figurio backend. Sets up the Express server, configures middleware, and defines API routes for users, events, visits, and contact form submissions.
+ */
+
 const express = require("express");
 const cors = require("cors");
 const bodyParser = require("body-parser");
@@ -18,7 +25,7 @@ app.use(
     origin: [
       "https://pavol-humeny.github.io",
       "https://figurio.online",
-      "http://localhost:5173", // allow local dev server
+      "http://localhost:5173", // local dev server
     ],
     methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
     credentials: true,

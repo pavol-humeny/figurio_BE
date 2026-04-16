@@ -1,6 +1,22 @@
+/**
+ * @file: userController.js
+ * @author Pavol Humeny
+ * @date 15.5.2026
+ * @description: Controller for handling user-related API endpoints, including fetching user data, visits, events, sessions, and comparisons for the Figurio application. Contains functions to interact with the database and return user-specific statistics and information.
+ */
+
 const db = require("../services/db");
 const geoip = require("geoip-lite");
 
+/**
+ * Get all users and their visit counts.
+ * @param {Object} req - The Express request object.
+ * @param {Object} res - The Express response object used to send back the user data or an error message.
+ * @returns {Promise<void>} - A promise that resolves when the user data is fetched and sent in the response or an error occurs.
+ * @throws Will send a 500 status code if there is an error fetching the user data from the database.
+ *
+ * [{userId, visitCount}, ...]
+ */
 exports.getAllUsers = async (req, res) => {
   try {
     const [rows] = await db.query(`
@@ -15,6 +31,16 @@ exports.getAllUsers = async (req, res) => {
     res.status(500).send("Server error");
   }
 };
+
+/**
+ * Get visits for a specific user.
+ * @param {Object} req - The Express request object.
+ * @param {Object} res - The Express response object used to send back the user visits or an error message.
+ * @returns {Promise<void>} - A promise that resolves when the user visits are fetched and sent in the response or an error occurs.
+ * @throws Will send a 500 status code if there is an error fetching the user visits from the database.
+ *
+ * [{visitId, timestamp, ip, userAgent, country, city}, ...]
+ */
 exports.getUserVisits = async (req, res) => {
   const userId = req.params.userId;
   try {
@@ -31,7 +57,13 @@ exports.getUserVisits = async (req, res) => {
   }
 };
 
-// Add user visit – create user automatically if not exists
+/**
+ * Add a visit for a specific user.
+ * @param {Object} req - The Express request object.
+ * @param {Object} res - The Express response object used to send back the result or an error message.
+ * @returns {Promise<void>} - A promise that resolves when the visit is added or an error occurs.
+ * @throws Will send a 500 status code if there is an error adding the visit to the database.
+ */
 exports.addUserVisit = async (req, res) => {
   const userId = req.params.userId;
   const ipFromClient = req.body.ip; // FE send IP
@@ -87,6 +119,15 @@ exports.addUserVisit = async (req, res) => {
   }
 };
 
+/**
+ * Get events for a specific user.
+ * @param {Object} req - The Express request object.
+ * @param {Object} res - The Express response object used to send back the user events or an error message.
+ * @returns {Promise<void>} - A promise that resolves when the user events are fetched and sent in the response or an error occurs.
+ * @throws Will send a 500 status code if there is an error fetching the user events from the database.
+ *
+ * [{eventId, eventType, data, timestamp}, ...]
+ */
 exports.getUserEvents = async (req, res) => {
   const userId = req.params.userId;
   try {
@@ -101,6 +142,13 @@ exports.getUserEvents = async (req, res) => {
   }
 };
 
+/**
+ * Add an event for a specific user.
+ * @param {Object} req - The Express request object.
+ * @param {Object} res - The Express response object used to send back the result or an error message.
+ * @returns {Promise<void>} - A promise that resolves when the event is added or an error occurs.
+ * @throws Will send a 500 status code if there is an error adding the event to the database.
+ */
 exports.addUserEvent = async (req, res) => {
   const userId = req.params.userId;
   const { eventType, data } = req.body;
@@ -119,7 +167,13 @@ exports.addUserEvent = async (req, res) => {
   }
 };
 
-// Add / update user session heartbeat
+/**
+ * Add or update a user session.
+ * @param {Object} req - The Express request object.
+ * @param {Object} res - The Express response object used to send back the result or an error message.
+ * @returns {Promise<void>} - A promise that resolves when the session is added or updated or an error occurs.
+ * @throws Will send a 500 status code if there is an error adding or updating the session in the database.
+ */
 exports.addUserSession = async (req, res) => {
   const userId = req.params.userId;
   const { sessionId, incrementMs } = req.body;
@@ -151,8 +205,15 @@ exports.addUserSession = async (req, res) => {
   }
 };
 
-// Get session statistics by day
-// [{ date, allVisits, minSession, maxSession, avgSession }, ...]
+/**
+ * Get sessions for a specific user.
+ * @param {Object} req - The Express request object.
+ * @param {Object} res - The Express response object used to send back the user sessions or an error message.
+ * @returns {Promise<void>} - A promise that resolves when the user sessions are fetched and sent in the response or an error occurs.
+ * @throws Will send a 500 status code if there is an error fetching the user sessions from the database.
+ *
+ * [{date, allVisits, minSession, maxSession, avgSession}, ...]
+ */
 exports.getUserSessions = async (req, res) => {
   try {
     const [rows] = await db.query(`
@@ -191,8 +252,15 @@ exports.getUserSessions = async (req, res) => {
   }
 };
 
-// Get session duration by user
-// [{ userId, minSession, maxSession, avgSession, totalSessionsTime }, ...]
+/**
+ * Get session duration by user.
+ * @param {Object} req - The Express request object.
+ * @param {Object} res - The Express response object used to send back the session duration data or an error message.
+ * @returns {Promise<void>} - A promise that resolves when the session duration data is fetched and sent in the response or an error occurs.
+ * @throws Will send a 500 status code if there is an error fetching the session duration data from the database.
+ *
+ * [{ userId, minSession, maxSession, avgSession, totalSessionsTime }, ...]
+ */
 exports.getSessionDurationByUser = async (req, res) => {
   try {
     const [rows] = await db.query(`
@@ -213,12 +281,20 @@ exports.getSessionDurationByUser = async (req, res) => {
   }
 };
 
-// {
-//   "totalVisits": 123,
-//   "activeDays": 25,
-//   "longestStreak": 7,
-//   "firstVisit": "12/02/2026",
-// }
+/**
+ * Get visit statistics for a specific user.
+ * @param {Object} req - The Express request object.
+ * @param {Object} res - The Express response object used to send back the user visit statistics or an error message.
+ * @returns {Promise<void>} - A promise that resolves when the user visit statistics are fetched and sent in the response or an error occurs.
+ * @throws Will send a 500 status code if there is an error fetching the user visit statistics from the database.
+ *
+ * {
+ *   totalVisits: 123,
+ *   activeDays: 25,
+ *   longestStreak: 7,
+ *   firstVisit: "12/02/2026"
+ * }
+ */
 exports.getUserVisits = async (req, res) => {
   const userId = req.params.userId;
 
@@ -300,16 +376,18 @@ exports.getUserVisits = async (req, res) => {
 };
 
 /**
- * Get tool usage for radar chart
- * Returns usage count per tool for given user
- * Example:
+ * Get user tool usage statistics.
+ * @param {Object} req - The Express request object.
+ * @param {Object} res - The Express response object used to send back the user tool usage statistics or an error message.
+ * @returns {Promise<void>} - A promise that resolves when the user tool usage statistics are fetched and sent in the response or an error occurs.
+ * @throws Will send a 500 status code if there is an error fetching the user tool usage statistics from the database.
+ *
  * {
- *   totalInteractions: 72,
+ *   totalInteractions: 123,
  *   tools: [
- *     { tool: "crop", usage: 34, percentage: 47 },
- *     { tool: "frame", usage: 12, percentage: 17 },
- *     { tool: "magnify", usage: 19, percentage: 26 },
- *     { tool: "blur", usage: 7, percentage: 10 }
+ *     { tool: "crop", usage: 45, percentage: 36 },
+ *     { tool: "rotate", usage: 30, percentage: 24 },
+ *     ...
  *   ]
  * }
  */
@@ -353,40 +431,45 @@ exports.getUserToolUsage = async (req, res) => {
 };
 
 /**
- * Get user events statistics
- * Example response:
- *  {
- *    "totalEvents": 532,
- *    "rank": 3,
- *    "import": {
- *      "total": 45,
- *      "formats": [
- *        { "format": "png", "count": 20 },
- *        { "format": "jpg", "count": 15 }
- *      ],
- *      "smallest": { "width": 200, "height": 100 },
- *      "largest": { "width": 1920, "height": 1080 },
- *      "smallestBySize": { "sizeKB": 34 },
- *      "largestBySize": { "sizeKB": 820 }
- *    },
- *    "export": {
- *      "total": 38,
- *      "formats": [
- *        { "format": "png", "count": 25 },
- *        { "format": "pdf", "count": 13 }
- *      ],
- *      "smallest": { "width": 300, "height": 200 },
- *      "largest": { "width": 1920, "height": 1080 },
- *      "smallestBySize": { "sizeKB": 28 },
- *      "largestBySize": { "sizeKB": 910 }
- *    }
- *  }
+ * Get user events statistics.
+ * @param {Object} req - The Express request object.
+ * @param {Object} res - The Express response object used to send back the user events statistics or an error message.
+ * @returns {Promise<void>} - A promise that resolves when the user events statistics are fetched and sent in the response or an error occurs.
+ * @throws Will send a 500 status code if there is an error fetching the user events statistics from the database.
+ *
+ * {
+ *   totalEvents: 123,
+ *   rank: 5,
+ *   import: {
+ *     total: 50,
+ *     formats: [
+ *       { format: "jpg", count: 30 },
+ *       { format: "png", count: 20 },
+ *       ...
+ *     ],
+ *     smallestPx: { width: 100, height: 100 },
+ *     largestPx: { width: 4000, height: 3000 },
+ *     sizeStats: { minSize: 10, maxSize: 5000 }
+ *   },
+ *   export: {
+ *     total: 70,
+ *     formats: [
+ *       { format: "jpg", count: 40 },
+ *       { format: "png", count: 20 },
+ *       { format: "copyToClipboard", count: 10 },
+ *       ...
+ *     ],
+ *     smallestPx: { width: 100, height: 100 },
+ *     largestPx: { width: 4000, height: 3000 },
+ *     sizeStats: { minSize: 10, maxSize: 5000 }
+ *   }
+ * }
  */
 exports.getUserEventsStats = async (req, res) => {
   const userId = req.params.userId;
 
   try {
-    // 1. TOTAL EVENTS + RANK
+    // Total events and ranking
     const [[userTotal]] = await db.query(
       `
       SELECT COUNT(*) AS totalEvents
@@ -405,7 +488,7 @@ exports.getUserEventsStats = async (req, res) => {
     const rankIndex = ranking.findIndex((u) => u.userId === userId);
     const rank = rankIndex !== -1 ? rankIndex + 1 : null;
 
-    // 2. IMPORT (uploadImage)
+    // Import (uploadImage)
     const [imports] = await db.query(
       `
       SELECT
@@ -420,7 +503,7 @@ exports.getUserEventsStats = async (req, res) => {
       [userId],
     );
 
-    // PIXEL SIZE (independent)
+    // Pixel size
     const [[importSmallestPx]] = await db.query(
       `
       SELECT
@@ -449,7 +532,7 @@ exports.getUserEventsStats = async (req, res) => {
       [userId],
     );
 
-    // FILE SIZE (independent)
+    // File size
     const [[importSizeStats]] = await db.query(
       `
       SELECT
@@ -464,7 +547,7 @@ exports.getUserEventsStats = async (req, res) => {
 
     const importTotal = imports.reduce((sum, r) => sum + r.count, 0);
 
-    // 3. EXPORT (exportImage + copyToClipboard)
+    // Export (exportImage + copyToClipboard)
     const [exportsData] = await db.query(
       `
       SELECT
@@ -492,7 +575,7 @@ exports.getUserEventsStats = async (req, res) => {
       [userId, userId],
     );
 
-    // PIXEL SIZE (independent)
+    // Pixel size
     const [[exportSmallestPx]] = await db.query(
       `
       SELECT
@@ -521,7 +604,7 @@ exports.getUserEventsStats = async (req, res) => {
       [userId],
     );
 
-    // FILE SIZE (independent)
+    // File size
     const [[exportSizeStats]] = await db.query(
       `
       SELECT
@@ -536,7 +619,7 @@ exports.getUserEventsStats = async (req, res) => {
 
     const exportTotal = exportsData.reduce((sum, r) => sum + r.count, 0);
 
-    // RESPONSE
+    // Response
     res.json({
       totalEvents: userTotal.totalEvents,
       rank,
@@ -548,7 +631,7 @@ exports.getUserEventsStats = async (req, res) => {
           count: r.count,
         })),
 
-        // PIXELS
+        // Pixels
         smallest: importSmallestPx
           ? {
               width: importSmallestPx.width,
@@ -563,7 +646,7 @@ exports.getUserEventsStats = async (req, res) => {
             }
           : null,
 
-        // FILE SIZE (KB)
+        // File size (KB)
         smallestBySize:
           importSizeStats?.minSize != null
             ? { sizeKB: Math.round(importSizeStats.minSize / 1024) }
@@ -582,7 +665,7 @@ exports.getUserEventsStats = async (req, res) => {
           count: r.count,
         })),
 
-        // PIXELS
+        // Pixels
         smallest: exportSmallestPx
           ? {
               width: exportSmallestPx.width,
@@ -597,7 +680,7 @@ exports.getUserEventsStats = async (req, res) => {
             }
           : null,
 
-        // FILE SIZE (KB)
+        // File size (KB)
         smallestBySize:
           exportSizeStats?.minSize != null
             ? { sizeKB: Math.round(exportSizeStats.minSize / 1024) }
@@ -616,35 +699,31 @@ exports.getUserEventsStats = async (req, res) => {
 };
 
 /**
- * Get session statistics for user
- * Example response:
- *  {
-      "sessionCount": 12,
-      "sessionDuration": {
-        "min": 15,
-        "max": 320,
-        "avg": 85,
-        "total": 1020
-      },
-      "totalEvents": 540,
-      "eventsPerMinute": 3.25,
-      "perSession": {
-        "import": 1.17,
-        "export": 0.83,
-        "toolToggle": 4.25,
-        "operation": 6.91
-      },
-      "keyboardShortcuts": 120
-    }
- */
-/**
- * Get session statistics for user
+ * Get user session statistics.
+ * @param {Object} req - The Express request object.
+ * @param {Object} res - The Express response object used to send back the user session statistics or an error message.
+ * @returns {Promise<void>} - A promise that resolves when the user session statistics are fetched and sent in the response or an error occurs.
+ * @throws Will send a 500 status code if there is an error fetching the user session statistics from the database.
+ *
+ * {
+ *   sessionCount: 10,
+ *   sessionDuration: { min: 5, max: 120, avg: 45, total: 450 },
+ *   totalEvents: 200,
+ *   eventsPerMinute: 4.44,
+ *   perSession: {
+ *     import: 2,
+ *     export: 1,
+ *     toolToggle: 5,
+ *     operation: 10
+ *   },
+ *   keyboardShortcuts: 15
+ * }
  */
 exports.getUserSessionStats = async (req, res) => {
   const userId = req.params.userId;
 
   try {
-    // 1. SESSIONS
+    // Sessions
     const [sessions] = await db.query(
       `
       SELECT durationMs
@@ -666,7 +745,7 @@ exports.getUserSessionStats = async (req, res) => {
       ? totalDuration / durationsMin.length
       : 0;
 
-    // 2. EVENTS (GLOBAL)
+    // Events
     const [[events]] = await db.query(
       `
       SELECT
@@ -689,7 +768,7 @@ exports.getUserSessionStats = async (req, res) => {
     const totalKeyboard = events.keyboardShortcutCount || 0;
     const totalOperation = events.operationCount || 0;
 
-    // 3. PER SESSION (safe divide)
+    // Per session averages
     const safeDivide = (value) => (sessionCount > 0 ? value / sessionCount : 0);
 
     const importPerSession = safeDivide(totalImport);
@@ -697,12 +776,12 @@ exports.getUserSessionStats = async (req, res) => {
     const toolTogglePerSession = safeDivide(totalToolToggle);
     const operationPerSession = safeDivide(totalOperation);
 
-    // 4. EVENTS PER MINUTE
+    // Events per minute
     const totalMinutes = totalDuration;
 
     const eventsPerMinute = totalMinutes > 0 ? totalEvents / totalMinutes : 0;
 
-    // RESPONSE
+    // Response
     res.json({
       sessionCount,
 
@@ -733,33 +812,31 @@ exports.getUserSessionStats = async (req, res) => {
 };
 
 /**
- * Compare user stats with others (ranking)
+ * Get user comparison metrics.
+ * @param {Object} req - The Express request object.
+ * @param {Object} res - The Express response object used to send back the user comparison metrics or an error message.
+ * @returns {Promise<void>} - A promise that resolves when the user comparison metrics are fetched and sent in the response or an error occurs.
+ * @throws Will send a 500 status code if there is an error fetching the user comparison metrics from the database.
  *
- * Example response:
  * {
- *   "usersCount": 42,
- *   "metrics": {
- *     "visits": { "value": 128, "best": 982, "rank": 6 },
- *     "operations": { "value": 356, "best": 2140, "rank": 4 },
- *     "operationPerSession": { "value": 5.42, "best": 12.87, "rank": 7 },
- *     "importCount": { "value": 48, "best": 310, "rank": 5 },
- *     "exportCount": { "value": 39, "best": 275, "rank": 6 },
- *     "sessionTimeTotal": { "value": 124.75, "best": 980.33, "rank": 8 },
- *     "eventsPerMinute": { "value": 2.85, "best": 6.21, "rank": 9 }
- *     "exportRate": { "value": 0.81, "best": 0.95, "rank": 5 }
+ *   usersCount: 100,
+ *   metrics: {
+ *     visits: { value: 10, best: 50, rank: 5 },
+ *     operations: { value: 20, best: 100, rank: 10 },
+ *     operationPerSession: { value: 5, best: 10, rank: 8 },
+ *     importCount: { value: 2, best: 20, rank: 15 },
+ *     exportCount: { value: 1, best: 15, rank: 20 },
+ *     sessionTimeTotal: { value: 60, best: 300, rank: 12 },
+ *     eventsPerMinute: { value: 3, best: 10, rank: 7 },
+ *     exportRate: { value: 50, best: 90, rank: 18 }
  *   }
- * }
- *
- * Body:
- * {
- *   excludedUserIds: ["admin", "testUser"]
  * }
  */
 exports.getUserComparison = async (req, res) => {
   const userId = req.params.userId;
 
   /**
-   * Hardcoded excluded users
+   * Excluded users
    */
   const excludedUserIds = [
     "2bfee4b4-44b3-451f-9f34-92934025b66d",
@@ -775,9 +852,7 @@ exports.getUserComparison = async (req, res) => {
 
     const params = [...excludedUserIds];
 
-    /**
-     * Aggregate metrics per user
-     */
+    // Main query to get all metrics in one go for all users
     const [rows] = await db.query(
       `
       SELECT
@@ -863,7 +938,11 @@ exports.getUserComparison = async (req, res) => {
       params,
     );
 
-    // Converts anything to safe number
+    /**
+     * Helper to convert value to number and handle NaN
+     * @param {any} val - The value to convert to a number.
+     * @returns {number} - The converted number or 0 if the value is not a valid number.
+     */
     const toNumber = (val) => {
       const num = Number(val);
       return isNaN(num) ? 0 : num;
@@ -871,6 +950,8 @@ exports.getUserComparison = async (req, res) => {
 
     /**
      * Ranking helper
+     * @param {string} key - The metric key for which to build the ranking.
+     * @returns {Object} - The ranking information for the specified metric.
      */
     const buildMetric = (key) => {
       // Exclude users ONLY for ranking (not current user)
@@ -898,9 +979,7 @@ exports.getUserComparison = async (req, res) => {
       };
     };
 
-    /**
-     * Response
-     */
+    // Response
     res.json({
       usersCount: rows.length,
 

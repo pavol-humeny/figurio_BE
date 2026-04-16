@@ -1,8 +1,15 @@
+/**
+ * @file: initDb.js
+ * @author: Pavol Humeny
+ * @date: 15.5.2026
+ * @description: This script initializes the database by creating the necessary tables for users, visits, sessions, events, and ratings.
+ */
+
 const db = require("./services/db");
 
 async function init() {
   try {
-    // Drop tables first (in correct order to respect FK constraints)
+    // Drop tables if they exist
     await db.query(`DROP TABLE IF EXISTS events`);
     await db.query(`DROP TABLE IF EXISTS visits`);
     await db.query(`DROP TABLE IF EXISTS sessions`);

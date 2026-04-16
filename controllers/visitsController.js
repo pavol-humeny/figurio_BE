@@ -1,7 +1,21 @@
+/**
+ * @file visitsController.js
+ * @author Pavol Humeny
+ * @date 15.5.2026
+ * @description Controller for handling visit-related API endpoints, including fetching visits by day, unique visits, visits by country, and other visit statistics for the Figurio application.
+ */
+
 const db = require("../services/db");
 
-// Get all visits by day
-// [{date (YYYY-MM-DD), allVisits, uniqueVisits}, ...]
+/**
+ * Get visits grouped by day, including total visits and new users for each day. Executes a SQL query that aggregates visit data by date, counts total visits and identifies new users based on their first visit timestamp, and returns the results in the response.
+ * @param {Object} req - The Express request object.
+ * @param {Object} res - The Express response object used to send back the visits by day data or an error message.
+ * @returns {Promise<void>} - A promise that resolves when the visits by day data is fetched and sent in the response or an error occurs.
+ * @throws Will send a 500 status code if there is an error fetching the visits by day data from the database.
+ *
+ * [{date (YYYY-MM-DD), allVisits, newUsers}, ...]
+ */
 exports.getVisitsByDay = async (req, res) => {
   try {
     const [rows] = await db.query(`
@@ -21,8 +35,15 @@ exports.getVisitsByDay = async (req, res) => {
   }
 };
 
-// Get total visits count
-// { totalVisits }
+/**
+ * Get total visits count. Executes a SQL query that counts the total number of visits in the database and returns the result in the response.
+ * @param {Object} req - The Express request object.
+ * @param {Object} res - The Express response object used to send back the total visits count or an error message.
+ * @returns {Promise<void>} - A promise that resolves when the total visits count is fetched and sent in the response or an error occurs.
+ * @throws Will send a 500 status code if there is an error fetching the total visits count from the database.
+ *
+ * {totalVisits: number}
+ */
 exports.getAllVisitsCount = async (req, res) => {
   try {
     const [rows] = await db.query(`
@@ -36,8 +57,15 @@ exports.getAllVisitsCount = async (req, res) => {
   }
 };
 
-// Get unique visits count
-// { uniqueVisitors }
+/**
+ * Get unique visits count. Executes a SQL query that counts the number of distinct user IDs in the visits table to determine the total number of unique visitors and returns the result in the response.
+ * @param {Object} req - The Express request object.
+ * @param {Object} res - The Express response object used to send back the unique visits count or an error message.
+ * @returns {Promise<void>} - A promise that resolves when the unique visits count is fetched and sent in the response or an error occurs.
+ * @throws Will send a 500 status code if there is an error fetching the unique visits count from the database.
+ *
+ * {uniqueVisitors: number}
+ */
 exports.getUniqueVisitsCount = async (req, res) => {
   try {
     const [rows] = await db.query(`
@@ -51,8 +79,15 @@ exports.getUniqueVisitsCount = async (req, res) => {
   }
 };
 
-// Get visits for the last days
-// [{date (YYYY-MM-DD), allVisits, newUsers}, ...]
+/**
+ * Get visits for the last days. Executes a SQL query that fetches visit data for the specified number of days and returns the results in the response.
+ * @param {Object} req - The Express request object.
+ * @param {Object} res - The Express response object used to send back the last days visits data or an error message.
+ * @returns {Promise<void>} - A promise that resolves when the last days visits data is fetched and sent in the response or an error occurs.
+ * @throws Will send a 500 status code if there is an error fetching the last days visits data from the database.
+ *
+ * [{date (YYYY-MM-DD), allVisits, newUsers}, ...]
+ */
 exports.getLastDaysVisits = async (req, res) => {
   try {
     const [rows] = await db.query(`
@@ -80,8 +115,15 @@ exports.getLastDaysVisits = async (req, res) => {
   }
 };
 
-// Get average selected events per visit by day
-// [{ date, allVisits, avgUploadImage, avgExportImage, avgApplyOperation }, ...]
+/**
+ * Get average number of specific events per visit grouped by day. Executes a SQL query that calculates the average number of uploadImage, exportImage, and applyOperation events per visit for each day, and returns the results in the response.
+ * @param {Object} req - The Express request object.
+ * @param {Object} res - The Express response object used to send back the average events per visit by day data or an error message.
+ * @returns {Promise<void>} - A promise that resolves when the average events per visit by day data is fetched and sent in the response or an error occurs.
+ * @throws Will send a 500 status code if there is an error fetching the average events per visit by day data from the database.
+ *
+ * [{date (YYYY-MM-DD), allVisits, avgUploadImage, avgExportImage, avgApplyOperation}, ...]
+ */
 exports.getAvgEventsPerVisitByDay = async (req, res) => {
   try {
     const [rows] = await db.query(`
@@ -123,8 +165,15 @@ exports.getAvgEventsPerVisitByDay = async (req, res) => {
   }
 };
 
-// Get visits grouped by country
-// [{country, visitCount}, ...]
+/**
+ * Get visits grouped by country. Executes a SQL query that counts the number of visits for each country and returns the results in the response.
+ * @param {Object} req - The Express request object.
+ * @param {Object} res - The Express response object used to send back the visits by country data or an error message.
+ * @returns {Promise<void>} - A promise that resolves when the visits by country data is fetched and sent in the response or an error occurs.
+ * @throws Will send a 500 status code if there is an error fetching the visits by country data from the database.
+ *
+ * [{country, visitCount}, ...]
+ */
 exports.getVisitsByCountry = async (req, res) => {
   try {
     const [rows] = await db.query(`
@@ -143,8 +192,15 @@ exports.getVisitsByCountry = async (req, res) => {
   }
 };
 
-// Get all visits by day
-// [{date, allVisits, newUsers}, ...]
+/**
+ * Get all visits by day. Executes a SQL query that counts the number of visits for each day and returns the results in the response.
+ * @param {Object} req - The Express request object.
+ * @param {Object} res - The Express response object used to send back the visits by day data or an error message.
+ * @returns {Promise<void>} - A promise that resolves when the visits by day data is fetched and sent in the response or an error occurs.
+ * @throws Will send a 500 status code if there is an error fetching the visits by day data from the database.
+ *
+ * [{date, allVisits, newUsers}, ...]
+ */
 exports.getVisitsByDay = async (req, res) => {
   try {
     const [rows] = await db.query(`
@@ -172,8 +228,15 @@ exports.getVisitsByDay = async (req, res) => {
   }
 };
 
-// Get visits for ALL days (from first visit to today)
-// [{ date (YYYY-MM-DD), allVisits, newUsers }, ...]
+/**
+ * Get visits grouped by day for the full date range. Executes a SQL query that generates a complete list of dates from the earliest visit to the current date, counts total visits and identifies new users for each date, and returns the results in the response.
+ * @param {Object} req - The Express request object.
+ * @param {Object} res - The Express response object used to send back the visits by day full range data or an error message.
+ * @returns {Promise<void>} - A promise that resolves when the visits by day full range data is fetched and sent in the response or an error occurs.
+ * @throws Will send a 500 status code if there is an error fetching the visits by day full range data from the database.
+ *
+ * [{date (YYYY-MM-DD), allVisits, newUsers}, ...]
+ */
 exports.getVisitsByDayFullRange = async (req, res) => {
   try {
     const [rows] = await db.query(`
@@ -219,8 +282,15 @@ exports.getVisitsByDayFullRange = async (req, res) => {
   }
 };
 
-// Get visits grouped by user
-// [{ userId, visitCount }, ...]
+/**
+ * Get visits grouped by user. Executes a SQL query that counts the number of visits for each user and returns the results in the response.
+ * @param {Object} req - The Express request object.
+ * @param {Object} res - The Express response object used to send back the visits by user data or an error message.
+ * @returns {Promise<void>} - A promise that resolves when the visits by user data is fetched and sent in the response or an error occurs.
+ * @throws Will send a 500 status code if there is an error fetching the visits by user data from the database.
+ *
+ * [{userId, visitCount}, ...]
+ */
 exports.getVisitsByUser = async (req, res) => {
   try {
     const [rows] = await db.query(`
@@ -239,8 +309,15 @@ exports.getVisitsByUser = async (req, res) => {
   }
 };
 
-// Get number of PWA visits
-// { pwaVisits }
+/**
+ * Get the number of PWA visits. Executes a SQL query that counts the number of visits where isPWA is true and returns the result in the response.
+ * @param {Object} req - The Express request object.
+ * @param {Object} res - The Express response object used to send back the number of PWA visits or an error message.
+ * @returns {Promise<void>} - A promise that resolves when the number of PWA visits is fetched and sent in the response or an error occurs.
+ * @throws Will send a 500 status code if there is an error fetching the number of PWA visits from the database.
+ *
+ * { pwaVisits }
+ */
 exports.getNumberOfPWAVisits = async (req, res) => {
   try {
     const [rows] = await db.query(`

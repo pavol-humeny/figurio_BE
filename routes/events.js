@@ -1,3 +1,10 @@
+/**
+ * @file: events.js
+ * @author: Pavol Humeny
+ * @date: 15.5.2026
+ * @description: Express router for handling event-related API endpoints, including fetching all events, event overviews, and specific event types for the Figurio application.
+ */
+
 const express = require("express");
 const router = express.Router();
 const eventController = require("../controllers/eventController");

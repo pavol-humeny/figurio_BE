@@ -1,3 +1,10 @@
+/**
+ * @file: users.js
+ * @author: Pavol Humeny
+ * @date: 15.5.2026
+ * @description: Express router for handling user-related API endpoints, including fetching user data, visits, events, sessions, and comparisons for the Figurio application.
+ */
+
 const express = require("express");
 const router = express.Router();
 const userController = require("../controllers/userController");

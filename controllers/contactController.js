@@ -1,11 +1,25 @@
+/**
+ * @file: contactController.js
+ * @author: Pavol Humeny
+ * @date: 15.5.2026
+ * @description: Controller for handling contact-related API endpoints, including contact form submissions, notifications for visits during maintenance, and user ratings for the Figurio application.
+ */
+
 const mailService = require("../services/mailService");
 const geoip = require("geoip-lite");
 const db = require("../services/db");
 
+/**
+ * Handle contact form submission by sending an email with the provided details. Validates the input and responds with appropriate status codes based on success or failure of the email sending process.
+ * @param {Object} req - The Express request object containing the contact form data in the body.
+ * @param {Object} res - The Express response object used to send back the appropriate response.
+ * @returns {Promise<void>} - A promise that resolves when the email is sent or an error occurs.
+ * @throws Will send a 400 status code if required fields are missing, and a 500 status code if there is an error sending the email.
+ */
 exports.sendContactForm = async (req, res) => {
   const { name, email, subject, message } = req.body;
 
-  // Basic validation
+  // Validation
   if (!name || !email || !subject || !message) {
     return res.status(400).send("Missing required fields.");
   }
@@ -21,9 +35,16 @@ exports.sendContactForm = async (req, res) => {
   }
 };
 
+/**
+ * Handle a visit during maintenance by sending an email notification with the visit details, including user ID, IP address, geolocation, user agent, and time of the visit. The IP address is determined from the request headers or body, and geolocation is performed using the geoip-lite library.
+ * @param {Object} req - The Express request object containing the user ID in the parameters and IP address in the body.
+ * @param {Object} res - The Express response object used to send back the appropriate response.
+ * @returns {Promise<void>} - A promise that resolves when the email is sent or an error occurs.
+ * @throws Will send a 500 status code if there is an error sending the email.
+ */
 exports.visitDuringMaintenance = async (req, res) => {
   const userId = req.params.userId;
-  const ipFromClient = req.body.ip; // FE send IP
+  const ipFromClient = req.body.ip; 
 
   try {
     // Get IP from client or fallback to headers
@@ -56,10 +77,6 @@ exports.visitDuringMaintenance = async (req, res) => {
       second: "2-digit",
     });
 
-    console.log(
-      `[DEBUG] UserID: ${userId}, IP: ${ip}, Country: ${country}, City: ${city}, UA: ${userAgent}, Time: ${time}`,
-    );
-
     // Send email notification
     await mailService.sendVisitDuringMaintenanceEmail({
       userId,
@@ -77,14 +94,19 @@ exports.visitDuringMaintenance = async (req, res) => {
   }
 };
 
+/**
+ * Handle user rating submission by inserting the rating into the database and sending an email notification with the rating details. Validates the input and responds with appropriate status codes based on success or failure of the database insertion and email sending process.
+ * @param {Object} req - The Express request object containing the user ID in the parameters and rating details in the body.
+ * @param {Object} res - The Express response object used to send back the appropriate response.
+ * @returns {Promise<void>} - A promise that resolves when the rating is submitted and email is sent or an error occurs.
+ * @throws Will send a 500 status code if there is an error submitting the rating or sending the email.
+ */
 exports.submitRating = async (req, res) => {
   const userId = req.params.userId;
   const { rating, feedback, numberOfExports } = req.body;
 
   try {
-    /**
-     * Insert rating into database
-     */
+    // Insert rating into the database
     await db.query(
       `
       INSERT INTO ratings (userId, rating, feedback, numberOfExports)

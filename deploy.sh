@@ -1,14 +1,16 @@
 #!/bin/bash
-# manage-figurio.sh
-# Script to deploy or manage Figurio backend via SSH and PM2
+# @file: deploy.sh
+# @author: Pavol Humeny
+# @date: 15.5.2026
+# @description: Script to deploy or manage Figurio backend via SSH and PM2
 
-# --- CONFIGURATION ---
+# CONFIGURATION
 SERVER_USER="root"
 SERVER_HOST="104.248.248.66"
 PROJECT_DIR="/var/www/figurio"
 PM2_PROCESS_NAME="figurio-backend"
 
-# --- USAGE ---
+# USAGE
 usage() {
     echo "Usage: $0 [-d | -s | -k | -r | -c | --change-database-structure | --clear-database]"
     echo "  -d    Deploy (git pull + restart backend)"
@@ -27,7 +29,7 @@ fi
 
 ACTION=$1
 
-# --- SCRIPT ---
+# SCRIPT
 ssh $SERVER_USER@$SERVER_HOST << EOF
     cd $PROJECT_DIR || exit
     case "$ACTION" in

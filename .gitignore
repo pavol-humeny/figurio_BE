@@ -23,7 +23,7 @@ pids/
 .DS_Store
 Thumbs.db
 
-# Build output (ak používaš build nástroje)
+# Build output 
 dist/
 build/
 
