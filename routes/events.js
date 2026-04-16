@@ -19,5 +19,6 @@ router.get("/openModal", eventController.getOpenModalEvents);
 router.get("/keyboardShortcuts", eventController.getKeyboardShortcutsEvents);
 router.get("/eventsByUser", eventController.getEventsByUser);
 router.get("/appInstalledCount", eventController.getAppInstalledCount);
+router.get("/appRating", eventController.getAppRating);
 
 module.exports = router;

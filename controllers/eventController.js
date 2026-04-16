@@ -317,3 +317,31 @@ exports.getAppInstalledCount = async (req, res) => {
     res.status(500).json({ message: "Internal server error" });
   }
 };
+
+/**
+ * Get average app rating and total ratings count.
+ * @param {Object} req - The Express request object.
+ * @param {Object} res - The Express response object used to send back the average app rating and total ratings count or an error message.
+ * @returns {Promise<void>} - A promise that resolves when the average app rating and total ratings count are fetched and sent in the response or an error occurs.
+ * @throws Will send a 500 status code if there is an error fetching the average app rating and total ratings count from the database.
+ *
+ * {averageRating: number, totalRatings: number}
+ */
+exports.getAppRating = async (req, res) => {
+  try {
+    const [rows] = await db.query(`
+      SELECT 
+        AVG(rating) AS averageRating,
+        COUNT(*) AS totalRatings
+      FROM ratings
+    `);
+
+    res.json({
+      averageRating: rows[0].averageRating,
+      totalRatings: rows[0].totalRatings,
+    });
+  } catch (err) {
+    console.error("Error fetching average app rating:", err);
+    res.status(500).json({ message: "Internal server error" });
+  }
+};
