@@ -10,15 +10,15 @@ const db = require("./services/db");
 async function init() {
   try {
     // Drop tables if they exist
-    await db.query(`DROP TABLE IF EXISTS events`);
-    await db.query(`DROP TABLE IF EXISTS visits`);
-    await db.query(`DROP TABLE IF EXISTS sessions`);
-    await db.query(`DROP TABLE IF EXISTS users`);
-    await db.query(`DROP TABLE IF EXISTS ratings`);
+    // await db.query(`DROP TABLE IF EXISTS events`);
+    // await db.query(`DROP TABLE IF EXISTS visits`);
+    // await db.query(`DROP TABLE IF EXISTS sessions`);
+    // await db.query(`DROP TABLE IF EXISTS users`);
+    // await db.query(`DROP TABLE IF EXISTS ratings`);
 
     // Users table
     await db.query(`
-      CREATE TABLE users (
+      CREATE TABLE IF NOT EXISTS users (
         userId VARCHAR(255) NOT NULL PRIMARY KEY,
         timestamp DATETIME DEFAULT CURRENT_TIMESTAMP
       )
@@ -26,7 +26,7 @@ async function init() {
 
     // Visits table
     await db.query(`
-      CREATE TABLE visits (
+      CREATE TABLE IF NOT EXISTS visits (
         visitId INT AUTO_INCREMENT PRIMARY KEY,
         userId VARCHAR(255) NOT NULL,
         timestamp DATETIME DEFAULT CURRENT_TIMESTAMP,
@@ -34,13 +34,14 @@ async function init() {
         userAgent VARCHAR(255),
         country VARCHAR(50),
         city VARCHAR(50),
+        isPWA tinyint(1) DEFAULT 0,
         FOREIGN KEY (userId) REFERENCES users(userId) ON DELETE CASCADE
       )
     `);
 
     // Sessions table
     await db.query(`
-      CREATE TABLE sessions (
+      CREATE TABLE IF NOT EXISTS sessions (
         sessionId VARCHAR(255) NOT NULL PRIMARY KEY,
         userId VARCHAR(255) NOT NULL,
         timestamp DATETIME DEFAULT CURRENT_TIMESTAMP,
@@ -52,7 +53,7 @@ async function init() {
 
     // Events table
     await db.query(`
-      CREATE TABLE events (
+      CREATE TABLE IF NOT EXISTS events (
         eventId INT AUTO_INCREMENT PRIMARY KEY,
         userId VARCHAR(255) NOT NULL,
         eventType VARCHAR(50) NOT NULL,
@@ -64,7 +65,7 @@ async function init() {
 
     // Ratings table
     await db.query(`
-      CREATE TABLE ratings (
+      CREATE TABLE IF NOT EXISTS ratings (
         ratingId INT AUTO_INCREMENT PRIMARY KEY,
         userId VARCHAR(255) NOT NULL,
         rating INT NOT NULL,
