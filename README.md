@@ -35,7 +35,10 @@ Detail práce (elektronická verzia): https://www.vut.cz/studenti/zav-prace/deta
 
 # Verejná verzia aplikácie
 
-Frontend (produkcia): https://pavol-humeny.github.io/figurio/
+Frontend:  
+https://pavol-humeny.github.io/figurio/  
+https://app.fit.vut.cz/figurio/  
+
 
 ---
 
@@ -101,8 +104,6 @@ Frontend (produkcia): https://pavol-humeny.github.io/figurio/
 ---
 
 # API endpointy
-
-> Base URL (lokálne): `http://localhost:3000`
 
 ## 1) Users (`/api/users`)
 
@@ -307,7 +308,7 @@ Frontend (produkcia): https://pavol-humeny.github.io/figurio/
 
 ---
 
-## 4) Contact & maintenance (`/api/contact`)
+## 4) Contact & Maintenance (`/api/contact`)
 
 ### `POST /api/contact`
 - **Typ:** POST
@@ -357,83 +358,6 @@ Povolené originy:
 - `http://localhost:5173`
 
 Povolené metódy: `GET`, `POST`, `PUT`, `DELETE`, `OPTIONS`.
-
----
-
-# Konfigurácia prostredia
-
-Vytvor `.env` súbor (hodnoty podľa tvojho prostredia):
-
-```env
-PORT=3000
-
-DB_USER=...
-DB_PASSWORD=...
-DB_NAME=...
-
-RESEND_API_KEY=...
-MAIL_FROM=...
-MAIL_TO=...
-```
-
----
-
-# Inštalácia a spustenie
-
-## Inštalácia
-
-```bash
-git clone <repo-url>
-cd figurio_BE
-npm install
-```
-
-# Deploy a správa backendu (PM2 + SSH)
-
-Repo obsahuje skript `deploy.sh` na vzdialenú správu backendu cez SSH a PM2.
-
-## Predpoklady
-- Lokálne dostupný `ssh` klient.
-- Na serveri nainštalované: `git`, `node`, `pm2`.
-- Prístup na server pre používateľa uvedeného v skripte.
-
-## Konfigurácia skriptu
-V `deploy.sh` sú definované premenné:
-- `SERVER_USER`
-- `SERVER_HOST`
-- `PROJECT_DIR`
-- `PM2_PROCESS_NAME`
-
-## Použitie
-
-```bash
-chmod +x deploy.sh
-./deploy.sh -d
-```
-
-### Dostupné voľby
-
-```bash
-./deploy.sh -d   # deploy (git pull + pm2 restart)
-./deploy.sh -s   # start backendu v PM2
-./deploy.sh -k   # stop backendu v PM2
-./deploy.sh -r   # restart backendu v PM2
-./deploy.sh -c   # create PM2 procesu (app.js)
-./deploy.sh --change-database-structure  # spustí node initDb.js
-./deploy.sh --clear-database             # truncate tabuliek users/visits/events
-```
-
-> Upozornenie: `--change-database-structure` môže meniť schému a `--clear-database` nenávratne vymaže dáta.
-
----
-
-## Inicializácia databázy
-
-> Poznámka: Skript `initDb.js` zmaže existujúce tabuľky a vytvorí ich znova.
-
-```bash
-node initDb.js
-```
 
 ---
 
